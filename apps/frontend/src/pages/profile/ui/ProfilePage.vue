@@ -34,6 +34,15 @@
     </div>
 
     <template v-else-if="user">
+      <div class="edit-bar">
+        <RouterLink :to="{ name: 'profile-edit' }" class="edit-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+          </svg>
+          Редактировать
+        </RouterLink>
+      </div>
+
       <UserProfileCard :user="user" />
 
       <div class="section">
@@ -75,6 +84,32 @@
     color: var(--p-text-primary);
     font-family: 'Manrope', 'IBM Plex Sans', sans-serif;
     padding-bottom: 40px;
+  }
+
+  .edit-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 16px 0;
+  }
+
+  .edit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--p-border);
+    color: var(--p-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 150ms, color 150ms;
+
+    &:hover {
+      border-color: var(--p-accent);
+      color: var(--p-accent);
+      text-decoration: none;
+    }
   }
 
   .section {

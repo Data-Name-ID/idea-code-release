@@ -55,6 +55,9 @@
     <h1 class="name">{{ user.name }}</h1>
     <p v-if="displayRoles" class="roles">{{ displayRoles }}</p>
 
+    <!-- Description -->
+    <p v-if="user.description" class="description">{{ user.description }}</p>
+
     <!-- Stats -->
     <div v-if="hasStats" class="stats">
       <div v-if="hackathonCount != null" class="stat">
@@ -157,6 +160,14 @@
     font-size: 14px;
     color: var(--p-text-secondary);
     text-align: center;
+  }
+
+  .description {
+    margin: 0;
+    font-size: 14px;
+    color: var(--p-text-secondary);
+    text-align: center;
+    line-height: 1.5;
   }
 
   .stats {
