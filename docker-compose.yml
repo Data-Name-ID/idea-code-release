@@ -12,7 +12,7 @@ x-backend-env: &backend-env
   APP_DB__MAX_OVERFLOW: "10"
   APP_SECURITY__JWT__TOKEN_SECRET: CHANGE_THIS_JWT_SECRET
   APP_SECURITY__JWT__TOKEN_EXPIRATION_MINUTES: "60"
-  APP_SECURITY__CORS_ALLOWED_ORIGINS: '["http://localhost:4173","http://127.0.0.1:4173"]'
+  APP_SECURITY__CORS_ALLOWED_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
 
 services:
   db:
@@ -35,6 +35,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    sysctls:
+      vm.overcommit_memory: "1"
     # ports:
     #   - "6379:6379"
     volumes:
@@ -63,8 +65,8 @@ services:
       dockerfile: Dockerfile
       target: prod-api
     environment: *backend-env
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -80,8 +82,8 @@ services:
       target: prod
       args:
         VITE_API_BASE_URL: http://localhost:8000
-    ports:
-      - "4173:80"
+    # ports:
+    #   - "5173:80"
     depends_on:
       backend:
         condition: service_started

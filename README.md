@@ -51,11 +51,16 @@ Single production-style compose:
 
 ```bash
 docker compose up --build
+
+For Linux hosts running Redis in production, ensure memory overcommit is enabled:
+
+```bash
+sudo sysctl -w vm.overcommit_memory=1
 ```
 
 Default ports:
 
-- Frontend prod: `4173`
+- Frontend prod: `5173`
 - Backend: `8000`
 - Postgres: `5432`
 - Redis: `6379`
