@@ -44,9 +44,6 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  // TODO: re-enable auth guards when backend is ready
-  return true
-
   await ensureSessionInitialized()
 
   const isAuthenticated = authState.isAuthenticated.value

@@ -119,3 +119,19 @@ export interface EventRatingResponse {
   event_id: number
   ratings: EventRatingEntryResponse[]
 }
+
+// ─── Auth ─────────────────────────────────────────────────
+
+export interface AuthResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
+  expires_in: number
+  user: UserResponse
+}
+
+export interface RefreshResponse {
+  access_token: string
+  token_type: string
+  expires_in: number
+}
