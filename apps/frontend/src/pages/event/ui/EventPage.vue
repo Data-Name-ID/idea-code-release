@@ -5,49 +5,42 @@
   import { eventApi } from '@entities/event/api'
   import { userApi } from '@entities/user/api'
   import { teamApi } from '@entities/team/api'
+  import type { EventRatingStatus } from '@shared/types/api'
+  import { formatDateLong, initials } from '@shared/lib/format'
 
   const route = useRoute()
   const router = useRouter()
-
   const eventId = computed(() => Number(route.params.id))
 
-  // ── State ──────────────────────────────────────────────
-
   const event = ref<Awaited<ReturnType<typeof eventApi.getById>> | null>(null)
-  const loading = ref(true)
+  const isLoading = ref(true)
   const error = ref<string | null>(null)
 
-  type RatingStatus = 'winner' | 'prize_winner' | 'participant'
-
-  // Team entry (grouped by team_id)
   interface TeamRatingEntry {
     kind: 'team'
     id: number
-    status: RatingStatus
+    status: EventRatingStatus
     name: string
     memberCount: number
     members: Array<{ name: string; avatar: string | null; roles: string }>
   }
 
-  // Solo entry (no team)
   interface SoloRatingEntry {
     kind: 'solo'
     id: number
-    status: RatingStatus
+    status: EventRatingStatus
     name: string
     avatar: string | null
     roles: string
   }
 
-  type AnyRatingEntry = TeamRatingEntry | SoloRatingEntry
+  type RatingEntry = TeamRatingEntry | SoloRatingEntry
 
-  const entries = ref<AnyRatingEntry[]>([])
+  const entries = ref<RatingEntry[]>([])
 
   const winners = computed(() => entries.value.filter((e) => e.status === 'winner'))
   const prizeWinners = computed(() => entries.value.filter((e) => e.status === 'prize_winner'))
   const participants = computed(() => entries.value.filter((e) => e.status === 'participant'))
-
-  // ── Load ───────────────────────────────────────────────
 
   onMounted(async () => {
     try {
@@ -70,9 +63,8 @@
       const userMap = new Map(users.filter(Boolean).map((u) => [u!.id, u!]))
       const teamMap = new Map(teams.filter(Boolean).map((t) => [t!.id, t!]))
 
-      // Group by team_id, keep solo entries separate
       const teamSeen = new Set<number>()
-      const result: AnyRatingEntry[] = []
+      const result: RatingEntry[] = []
 
       for (const r of raw) {
         if (r.team_id !== null) {
@@ -116,41 +108,18 @@
     } catch {
       error.value = 'Не удалось загрузить мероприятие'
     } finally {
-      loading.value = false
+      isLoading.value = false
     }
   })
 
-  // ── Helpers ────────────────────────────────────────────
-
-  function formatDate(iso: string): string {
-    return new Intl.DateTimeFormat('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date(iso))
-  }
-
-  function initials(name: string): string {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase()
-  }
-
-  function navigate(entry: AnyRatingEntry): void {
-    if (entry.kind === 'team') {
-      router.push(`/teams/${entry.id}`)
-    } else {
-      router.push(`/users/${entry.id}`)
-    }
+  function navigate(entry: RatingEntry): void {
+    if (entry.kind === 'team') router.push(`/teams/${entry.id}`)
+    else router.push(`/users/${entry.id}`)
   }
 </script>
 
 <template>
   <div class="event-page">
-    <!-- Header -->
     <header class="page-header">
       <button class="back-btn" @click="router.back()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
@@ -161,25 +130,21 @@
       <div style="width: 36px" />
     </header>
 
-    <!-- Loading -->
-    <template v-if="loading">
+    <template v-if="isLoading">
       <div class="cover-skeleton" />
       <div class="info-skeleton">
         <div class="skel skel--badge" />
         <div class="skel skel--title" />
         <div class="skel skel--line" />
-        <div class="skel skel--line skel--line-sm" />
+        <div class="skel skel--line skel--short" />
       </div>
     </template>
 
-    <!-- Error -->
-    <div v-else-if="error" class="error-state">
+    <div v-else-if="error" class="state-empty">
       <p>{{ error }}</p>
     </div>
 
-    <!-- Content -->
     <template v-else-if="event">
-      <!-- Cover -->
       <div class="cover">
         <img v-if="event.cover" :src="event.cover" :alt="event.title" class="cover__img" />
         <div v-else class="cover__placeholder" />
@@ -191,23 +156,20 @@
         </span>
       </div>
 
-      <!-- Info -->
       <section class="info">
         <h1 class="info__title">{{ event.title }}</h1>
         <div class="info__date">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
           </svg>
-          {{ formatDate(event.date) }}
+          {{ formatDateLong(event.date) }}
         </div>
         <p v-if="event.description" class="info__description">{{ event.description }}</p>
       </section>
 
-      <!-- Ratings -->
       <section v-if="entries.length" class="ratings">
         <h2 class="ratings__title">Результаты</h2>
 
-        <!-- Winners -->
         <div v-if="winners.length" class="group">
           <div class="group__header group__header--gold">
             <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
@@ -218,10 +180,8 @@
           <div class="entry-list">
             <template v-for="entry in winners" :key="`${entry.kind}-${entry.id}`">
               <div v-if="entry.kind === 'team'" class="entry entry--winner" role="button" tabindex="0" @click="navigate(entry)" @keydown.enter="navigate(entry)">
-                <div class="entry__icon entry__icon--team">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                  </svg>
+                <div class="entry__icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" /></svg>
                 </div>
                 <div class="entry__info">
                   <span class="entry__name">{{ entry.name }}</span>
@@ -244,7 +204,6 @@
           </div>
         </div>
 
-        <!-- Prize winners -->
         <div v-if="prizeWinners.length" class="group">
           <div class="group__header group__header--silver">
             <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
@@ -255,10 +214,8 @@
           <div class="entry-list">
             <template v-for="entry in prizeWinners" :key="`${entry.kind}-${entry.id}`">
               <div v-if="entry.kind === 'team'" class="entry entry--prize" role="button" tabindex="0" @click="navigate(entry)" @keydown.enter="navigate(entry)">
-                <div class="entry__icon entry__icon--team">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                  </svg>
+                <div class="entry__icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" /></svg>
                 </div>
                 <div class="entry__info">
                   <span class="entry__name">{{ entry.name }}</span>
@@ -281,7 +238,6 @@
           </div>
         </div>
 
-        <!-- Participants -->
         <div v-if="participants.length" class="group">
           <div class="group__header">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
@@ -293,9 +249,7 @@
             <template v-for="entry in participants" :key="`${entry.kind}-${entry.id}`">
               <div v-if="entry.kind === 'team'" class="entry entry--compact" role="button" tabindex="0" @click="navigate(entry)" @keydown.enter="navigate(entry)">
                 <div class="entry__icon entry__icon--sm">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                  </svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" /></svg>
                 </div>
                 <div class="entry__info">
                   <span class="entry__name">{{ entry.name }}</span>
@@ -316,8 +270,7 @@
         </div>
       </section>
 
-      <!-- No ratings -->
-      <div v-else class="no-ratings">
+      <div v-else class="state-empty">
         <p>Результаты ещё не опубликованы</p>
       </div>
     </template>
@@ -326,34 +279,11 @@
 
 <style scoped lang="scss">
   .event-page {
-    --p-bg:             #121212;
-    --p-surface:        #1c1c1e;
-    --p-border:         rgba(255, 255, 255, 0.08);
-    --p-accent:         #ff6b2b;
-    --p-gold:           #f5c542;
-    --p-silver:         #a8b2c0;
-    --p-text-primary:   #ffffff;
-    --p-text-secondary: rgba(255, 255, 255, 0.5);
-
-    min-height: 100dvh;
-    background: var(--p-bg);
-    color: var(--p-text-primary);
-    font-family: 'Manrope', 'IBM Plex Sans', sans-serif;
-    padding-bottom: 40px;
+    @include page-root;
   }
 
-  // ── Header ──────────────────────────────────────────────
-
   .page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--p-border);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: var(--p-bg);
+    @include sticky-header;
   }
 
   .page-header__title {
@@ -362,21 +292,8 @@
   }
 
   .back-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: none;
-    color: var(--p-text-primary);
-    cursor: pointer;
-    border-radius: 8px;
-
-    &:hover { background: var(--p-surface); }
+    @include back-button;
   }
-
-  // ── Cover ───────────────────────────────────────────────
 
   .cover {
     position: relative;
@@ -405,23 +322,19 @@
     align-items: center;
     gap: 5px;
     padding: 5px 12px;
-    border-radius: 100px;
-    background: rgba(18, 18, 18, 0.85);
+    border-radius: $radius-full;
+    background: rgba($color-bg, 0.85);
     backdrop-filter: blur(8px);
     font-size: 12px;
     font-weight: 600;
-    color: #4ade80;
-    border: 1px solid rgba(74, 222, 128, 0.3);
+    color: $color-success;
+    border: 1px solid rgba($color-success, 0.3);
   }
-
-  // ── Info ────────────────────────────────────────────────
 
   .info {
     padding: 20px 16px;
-    border-bottom: 1px solid var(--p-border);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    border-bottom: 1px solid $color-border;
+    @include flex-column(8px);
   }
 
   .info__title {
@@ -436,7 +349,7 @@
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
 
     svg { flex-shrink: 0; }
   }
@@ -444,17 +357,13 @@
   .info__description {
     margin: 4px 0 0;
     font-size: 14px;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
     line-height: 1.6;
   }
 
-  // ── Ratings ─────────────────────────────────────────────
-
   .ratings {
     padding: 20px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    @include flex-column(20px);
   }
 
   .ratings__title {
@@ -464,9 +373,7 @@
   }
 
   .group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    @include flex-column(8px);
   }
 
   .group__header {
@@ -477,18 +384,14 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
 
-    &--gold  { color: var(--p-gold); }
-    &--silver { color: var(--p-silver); }
+    &--gold  { color: $color-gold; }
+    &--silver { color: $color-silver; }
   }
 
-  // ── Entry list ───────────────────────────────────────────
-
   .entry-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    @include flex-column(8px);
   }
 
   .entry {
@@ -496,140 +399,100 @@
     align-items: center;
     gap: 12px;
     padding: 12px 14px;
-    border-radius: 14px;
-    border: 1px solid var(--p-border);
-    background: var(--p-surface);
+    border-radius: $radius-xl;
+    border: 1px solid $color-border;
+    background: $color-surface;
     cursor: pointer;
 
-    &--winner { border-color: rgba(245, 197, 66, 0.35); background: rgba(245, 197, 66, 0.06); }
-    &--prize  { border-color: rgba(168, 178, 192, 0.3); background: rgba(168, 178, 192, 0.05); }
-    &--compact { padding: 8px 12px; border-radius: 10px; }
+    &--winner { border-color: rgba($color-gold, 0.35); background: rgba($color-gold, 0.06); }
+    &--prize  { border-color: rgba($color-silver, 0.3); background: rgba($color-silver, 0.05); }
+    &--compact { padding: 8px 12px; border-radius: $radius-md; }
   }
 
-  // Avatar (solo user)
   .entry__avatar {
     width: 44px;
     height: 44px;
     border-radius: 50%;
     background: #2a2a2a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     font-size: 15px;
     font-weight: 700;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
     flex-shrink: 0;
     overflow: hidden;
 
     img { width: 100%; height: 100%; object-fit: cover; }
-
     &--sm { width: 36px; height: 36px; font-size: 12px; }
   }
 
-  // Icon placeholder (team)
   .entry__icon {
     width: 44px;
     height: 44px;
-    border-radius: 12px;
-    background: rgba(255, 107, 43, 0.12);
-    border: 1px solid rgba(255, 107, 43, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--p-accent);
+    border-radius: $radius-lg;
+    background: rgba($color-accent, 0.12);
+    border: 1px solid rgba($color-accent, 0.25);
+    @include flex-center;
+    color: $color-accent;
     flex-shrink: 0;
 
-    &--sm { width: 36px; height: 36px; border-radius: 10px; }
+    &--sm { width: 36px; height: 36px; border-radius: $radius-md; }
   }
 
   .entry__info {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
+    @include flex-column(3px);
     min-width: 0;
   }
 
   .entry__name {
     font-size: 15px;
     font-weight: 600;
-    color: var(--p-text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    @include text-ellipsis;
   }
 
   .entry__sub {
     font-size: 12px;
-    color: var(--p-text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: $color-text-secondary;
+    @include text-ellipsis;
   }
 
   .entry__medal {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     font-size: 12px;
     font-weight: 800;
     flex-shrink: 0;
 
-    &--gold   { background: rgba(245, 197, 66, 0.2); color: var(--p-gold); border: 1px solid rgba(245, 197, 66, 0.4); }
-    &--silver { background: rgba(168, 178, 192, 0.15); color: var(--p-silver); border: 1px solid rgba(168, 178, 192, 0.3); }
+    &--gold   { background: rgba($color-gold, 0.2); color: $color-gold; border: 1px solid rgba($color-gold, 0.4); }
+    &--silver { background: rgba($color-silver, 0.15); color: $color-silver; border: 1px solid rgba($color-silver, 0.3); }
   }
 
-  // ── No ratings ───────────────────────────────────────────
-
-  .no-ratings {
+  .state-empty {
     padding: 48px 16px;
     text-align: center;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
     font-size: 14px;
   }
 
-  // ── Skeleton ─────────────────────────────────────────────
-
   .cover-skeleton {
     height: 220px;
-    background: linear-gradient(90deg, #1e1e1e 25%, #252525 50%, #1e1e1e 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
+    @include skeleton-shimmer;
   }
 
   .info-skeleton {
     padding: 20px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    @include flex-column(10px);
   }
 
   .skel {
-    border-radius: 8px;
-    background: linear-gradient(90deg, #1e1e1e 25%, #252525 50%, #1e1e1e 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
+    border-radius: $radius-sm;
+    @include skeleton-shimmer;
 
-    &--badge { height: 24px; width: 120px; border-radius: 100px; }
+    &--badge { height: 24px; width: 120px; border-radius: $radius-full; }
     &--title { height: 28px; width: 75%; }
     &--line  { height: 14px; width: 50%; }
-    &--line-sm { width: 35%; }
-  }
-
-  @keyframes shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  // ── Error ────────────────────────────────────────────────
-
-  .error-state {
-    padding: 48px 16px;
-    text-align: center;
-    color: var(--p-text-secondary);
-    font-size: 14px;
+    &--short { width: 35%; }
   }
 </style>

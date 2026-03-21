@@ -1,12 +1,5 @@
 <script setup lang="ts">
-  export interface TeamEntry {
-    id: number
-    name: string
-    role: string
-    isActive: boolean
-    winCount: number
-    memberCount: number
-  }
+  import type { TeamEntry } from '../model/types'
 
   defineProps<{
     teams: TeamEntry[]
@@ -25,20 +18,17 @@
       <span v-if="teams.length" class="card__subtitle">Состоит в {{ teams.length }} командах</span>
     </div>
 
-    <!-- Skeleton -->
     <template v-if="isLoading">
       <div v-for="n in 2" :key="n" class="team-item team-item--skeleton">
-        <div class="skeleton skeleton--name" />
-        <div class="skeleton skeleton--line" />
+        <div class="skel skel--name" />
+        <div class="skel skel--line" />
       </div>
     </template>
 
-    <!-- Empty -->
     <div v-else-if="teams.length === 0" class="empty">
       <p>Команд пока нет</p>
     </div>
 
-    <!-- Teams -->
     <div
       v-for="team in teams"
       v-else
@@ -48,7 +38,10 @@
     >
       <div class="team-item__header">
         <span class="team-item__name">{{ team.name }}</span>
-        <span class="team-item__status" :class="team.isActive ? 'team-item__status--active' : 'team-item__status--inactive'">
+        <span
+          class="team-item__status"
+          :class="team.isActive ? 'team-item__status--active' : 'team-item__status--inactive'"
+        >
           {{ team.isActive ? 'Активная' : 'Неактивная' }}
         </span>
       </div>
@@ -72,38 +65,31 @@
 
 <style scoped lang="scss">
   .card {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    @include flex-column(12px);
   }
 
   .card__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    @include flex-between;
   }
 
   .card__title {
     font-size: 17px;
     font-weight: 700;
-    color: var(--p-text-primary);
   }
 
   .card__subtitle {
     font-size: 13px;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
   }
 
   .team-item {
-    border: 1px solid var(--p-border);
-    border-radius: 16px;
+    border: 1px solid $color-border;
+    border-radius: $radius-2xl;
     padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    @include flex-column(8px);
 
     &--active {
-      border-color: var(--p-accent);
+      border-color: $color-accent;
     }
 
     &--skeleton {
@@ -112,40 +98,37 @@
   }
 
   .team-item__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    @include flex-between;
   }
 
   .team-item__name {
     font-size: 16px;
     font-weight: 700;
-    color: var(--p-text-primary);
   }
 
   .team-item__status {
     font-size: 12px;
     font-weight: 600;
     padding: 3px 10px;
-    border-radius: 100px;
+    border-radius: $radius-full;
 
     &--active {
-      background: rgba(255, 107, 43, 0.15);
-      color: var(--p-accent);
-      border: 1px solid var(--p-accent);
+      background: rgba($color-accent, 0.15);
+      color: $color-accent;
+      border: 1px solid $color-accent;
     }
 
     &--inactive {
       background: rgba(255, 255, 255, 0.06);
-      color: var(--p-text-secondary);
-      border: 1px solid var(--p-border);
+      color: $color-text-secondary;
+      border: 1px solid $color-border;
     }
   }
 
   .team-item__role {
     margin: 0;
     font-size: 13px;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
   }
 
   .team-item__stats {
@@ -154,20 +137,18 @@
   }
 
   .team-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
+    @include flex-column(1px);
   }
 
   .team-stat__value {
     font-size: 18px;
     font-weight: 700;
-    color: var(--p-accent);
+    color: $color-accent;
   }
 
   .team-stat__label {
     font-size: 11px;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
   }
 
   .team-item__link {
@@ -176,7 +157,7 @@
     padding: 0;
     font-size: 13px;
     font-weight: 600;
-    color: var(--p-accent);
+    color: $color-accent;
     cursor: pointer;
     text-align: left;
     margin-top: 4px;
@@ -186,11 +167,9 @@
     }
   }
 
-  .skeleton {
+  .skel {
     border-radius: 6px;
-    background: linear-gradient(90deg, #252525 25%, #2e2e2e 50%, #252525 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
+    @include skeleton-shimmer;
 
     &--name {
       height: 18px;
@@ -203,15 +182,10 @@
     }
   }
 
-  @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
   .empty {
     padding: 24px 0;
     text-align: center;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
     font-size: 14px;
   }
 </style>

@@ -1,22 +1,17 @@
 <script setup lang="ts">
   import { computed } from 'vue'
-  import type { EventResponse, EventRatingStatus } from '@shared/types/api'
-
-  export interface ActivityItem {
-    event: EventResponse
-    status: EventRatingStatus | null
-    teamName: string | null
-  }
+  import type { ActivityItem, ActivityFilter } from '../model/types'
+  import { formatDateShort, ratingStatusLabel } from '@shared/lib/format'
 
   const props = defineProps<{
     items: ActivityItem[]
     isLoading?: boolean
-    activeFilter?: 'all' | 'hackathon' | 'win'
+    activeFilter?: ActivityFilter
   }>()
 
   const emit = defineEmits<{
     'navigate-to-event': [id: number]
-    'filter-change': [filter: 'all' | 'hackathon' | 'win']
+    'filter-change': [filter: ActivityFilter]
   }>()
 
   const filtered = computed(() => {
@@ -25,18 +20,6 @@
       return props.items.filter((i) => i.status === 'winner' || i.status === 'prize_winner')
     return props.items
   })
-
-  function statusLabel(status: EventRatingStatus | null): string | null {
-    if (status === 'winner') return '1-е место'
-    if (status === 'prize_winner') return '2-е место'
-    return null
-  }
-
-  function formatDate(iso: string): string {
-    return new Intl.DateTimeFormat('ru-RU', { month: 'short', year: 'numeric' }).format(
-      new Date(iso),
-    )
-  }
 </script>
 
 <template>
@@ -46,7 +29,6 @@
       <span v-if="items.length" class="feed__count">{{ items.length }} событий</span>
     </div>
 
-    <!-- Filters -->
     <div class="filters">
       <button
         class="filter-btn"
@@ -71,21 +53,18 @@
       </button>
     </div>
 
-    <!-- Skeleton -->
     <template v-if="isLoading">
       <div v-for="n in 3" :key="n" class="event-card event-card--skeleton">
-        <div class="skeleton skeleton--cover" />
-        <div class="skeleton skeleton--line" />
-        <div class="skeleton skeleton--line skeleton--line-sm" />
+        <div class="skel skel--cover" />
+        <div class="skel skel--line" />
+        <div class="skel skel--line skel--short" />
       </div>
     </template>
 
-    <!-- Empty -->
     <div v-else-if="filtered.length === 0" class="empty">
       <p>Событий пока нет</p>
     </div>
 
-    <!-- Items -->
     <template v-else>
       <div
         v-for="item in filtered"
@@ -97,7 +76,6 @@
         @click="emit('navigate-to-event', item.event.id)"
         @keydown.enter="emit('navigate-to-event', item.event.id)"
       >
-        <!-- Cover image -->
         <div class="event-card__cover">
           <img
             v-if="item.event.cover"
@@ -106,15 +84,14 @@
             class="event-card__img"
           />
           <div v-else class="event-card__img event-card__img--placeholder" />
-          <span v-if="statusLabel(item.status)" class="event-card__badge">
+          <span v-if="ratingStatusLabel(item.status)" class="event-card__badge">
             <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12" aria-hidden="true">
               <path d="M8 1l1.94 4.27L14.5 5.8l-3.25 3.17.77 4.49L8 11.27l-4.02 2.19.77-4.49L1.5 5.8l4.56-.53L8 1z" />
             </svg>
-            {{ statusLabel(item.status) }}
+            {{ ratingStatusLabel(item.status) }}
           </span>
         </div>
 
-        <!-- Content -->
         <div class="event-card__body">
           <span class="event-card__type">Хакатон</span>
           <h3 class="event-card__title">{{ item.event.title }}</h3>
@@ -122,7 +99,7 @@
             <span v-if="item.teamName" class="event-card__team">
               Команда: {{ item.teamName }}
             </span>
-            <span class="event-card__date">{{ formatDate(item.event.date) }}</span>
+            <span class="event-card__date">{{ formatDateShort(item.event.date) }}</span>
           </div>
         </div>
       </div>
@@ -132,29 +109,24 @@
 
 <style scoped lang="scss">
   .feed {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    @include flex-column(12px);
   }
 
   .feed__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    @include flex-between;
   }
 
   .feed__title {
     font-size: 17px;
     font-weight: 700;
-    color: var(--p-text-primary);
   }
 
   .feed__count {
     font-size: 13px;
     font-weight: 600;
-    color: var(--p-accent);
-    border: 1px solid var(--p-accent);
-    border-radius: 100px;
+    color: $color-accent;
+    border: 1px solid $color-accent;
+    border-radius: $radius-full;
     padding: 2px 10px;
   }
 
@@ -165,35 +137,30 @@
 
   .filter-btn {
     padding: 6px 14px;
-    border-radius: 100px;
-    border: 1px solid var(--p-border);
+    border-radius: $radius-full;
+    border: 1px solid $color-border;
     background: transparent;
     font-size: 13px;
     font-weight: 500;
-    color: var(--p-text-primary);
+    color: $color-text-primary;
     cursor: pointer;
-    transition: background 150ms, border-color 150ms;
+    transition: background $transition-fast, border-color $transition-fast;
 
     &--active {
-      background: var(--p-accent);
-      border-color: var(--p-accent);
+      background: $color-accent;
+      border-color: $color-accent;
       color: #fff;
     }
   }
 
   .event-card {
-    border: 1px solid var(--p-border);
-    border-radius: 16px;
+    border: 1px solid $color-border;
+    border-radius: $radius-2xl;
     overflow: hidden;
-    cursor: pointer;
-    transition: border-color 150ms;
-
-    &:hover {
-      border-color: var(--p-text-secondary);
-    }
+    @include card-interactive;
 
     &--winner {
-      border-color: var(--p-accent);
+      border-color: $color-accent;
     }
 
     &--skeleton {
@@ -226,24 +193,22 @@
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    border-radius: 100px;
-    background: rgba(255, 107, 43, 0.9);
+    border-radius: $radius-full;
+    background: rgba($color-accent, 0.9);
     font-size: 12px;
     font-weight: 600;
     color: #fff;
   }
 
   .event-card__body {
+    @include flex-column(4px);
     padding: 12px 14px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
   }
 
   .event-card__type {
     font-size: 12px;
     font-weight: 500;
-    color: var(--p-accent);
+    color: $color-accent;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -252,21 +217,17 @@
     margin: 0;
     font-size: 16px;
     font-weight: 700;
-    color: var(--p-text-primary);
   }
 
   .event-card__meta {
-    display: flex;
-    justify-content: space-between;
+    @include flex-between;
     font-size: 13px;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
   }
 
-  .skeleton {
-    border-radius: 8px;
-    background: linear-gradient(90deg, #252525 25%, #2e2e2e 50%, #252525 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
+  .skel {
+    border-radius: $radius-sm;
+    @include skeleton-shimmer;
 
     &--cover {
       height: 160px;
@@ -277,23 +238,18 @@
       height: 14px;
       width: 70%;
       margin: 12px 14px 4px;
-
-      &-sm {
-        width: 45%;
-        margin-top: 0;
-      }
     }
-  }
 
-  @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    &--short {
+      width: 45%;
+      margin-top: 0;
+    }
   }
 
   .empty {
     padding: 32px 0;
     text-align: center;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
     font-size: 14px;
   }
 </style>

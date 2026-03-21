@@ -1,18 +1,5 @@
 @use '@shared/styles' as *;
 
-:root {
-  color-scheme: light;
-  --color-bg: #{$color-bg};
-  --color-surface: #{$color-surface};
-  --color-border: #{$color-border};
-  --color-text: #{$color-text};
-  --color-text-muted: #{$color-text-muted};
-  --color-link: #{$color-link};
-  --color-danger: #{$color-danger};
-  --shadow-md: #{$shadow-md};
-  font-family: $font-family-base;
-}
-
 *,
 *::before,
 *::after {
@@ -27,17 +14,24 @@ body,
 }
 
 body {
-  background: radial-gradient(circle at 100% 0%, #dbeafe, transparent 45%), var(--color-bg);
-  color: var(--color-text);
-  font-size: $font-size-base;
-  line-height: $line-height-base;
+  background: $color-bg;
+  color: $color-text-primary;
+  font-family: $font-family-base;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: var(--color-link);
+  color: $color-accent;
   text-decoration: none;
 
   &:hover {
     text-decoration: underline;
   }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

@@ -14,7 +14,6 @@
       <span class="card__subtitle">Роли и навыки</span>
     </div>
 
-    <!-- Roles -->
     <div v-if="roles.length" class="section">
       <div class="section__label">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14" aria-hidden="true">
@@ -32,7 +31,6 @@
       </div>
     </div>
 
-    <!-- Skills -->
     <div v-if="skills.length" class="section">
       <div class="section__label section__label--mono">
         <span>&gt;_</span>
@@ -49,37 +47,30 @@
 
 <style scoped lang="scss">
   .card {
-    border: 1px solid var(--p-accent);
-    border-radius: 16px;
+    border: 1px solid $color-accent;
+    border-radius: $radius-2xl;
     padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    @include flex-column(16px);
   }
 
   .card__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    @include flex-between;
   }
 
   .card__title {
     font-size: 16px;
     font-weight: 700;
-    color: var(--p-text-primary);
   }
 
   .card__subtitle {
     font-size: 13px;
-    color: var(--p-text-secondary);
+    color: $color-text-secondary;
   }
 
   .section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    border: 1px solid var(--p-accent);
-    border-radius: 12px;
+    @include flex-column(10px);
+    border: 1px solid $color-accent;
+    border-radius: $radius-lg;
     padding: 14px;
   }
 
@@ -89,17 +80,15 @@
     gap: 6px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--p-accent);
+    color: $color-accent;
 
     &--mono {
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-family: $font-family-mono;
     }
   }
 
   .roles-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    @include flex-column(8px);
   }
 
   .role-item {
@@ -107,14 +96,13 @@
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    border: 1px solid var(--p-border);
-    border-radius: 10px;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
     font-size: 14px;
     font-weight: 500;
-    color: var(--p-text-primary);
 
     svg {
-      color: var(--p-text-secondary);
+      color: $color-text-secondary;
       flex-shrink: 0;
     }
   }
@@ -127,9 +115,8 @@
 
   .skill-chip {
     padding: 6px 12px;
-    border: 1px solid var(--p-border);
-    border-radius: 100px;
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
     font-size: 13px;
-    color: var(--p-text-primary);
   }
 </style>

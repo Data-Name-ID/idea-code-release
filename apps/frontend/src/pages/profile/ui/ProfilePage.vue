@@ -2,103 +2,29 @@
   import { ref, computed, onMounted } from 'vue'
 
   import { authState } from '@shared/auth/session'
-  import { eventApi } from '@entities/event/api'
-  import { teamApi } from '@entities/team/api'
+  import { useUserActivity } from '@shared/composables/useUserActivity'
+  import type { ActivityFilter } from '@widgets/ActivityFeed/model/types'
 
   import UserProfileCard from '@widgets/UserProfileCard/ui/UserProfileCard.vue'
   import SpecializationCard from '@widgets/SpecializationCard/ui/SpecializationCard.vue'
   import ActivityFeed from '@widgets/ActivityFeed/ui/ActivityFeed.vue'
-  import type { ActivityItem } from '@widgets/ActivityFeed/ui/ActivityFeed.vue'
   import TeamsCard from '@widgets/TeamsCard/ui/TeamsCard.vue'
-  import type { TeamEntry } from '@widgets/TeamsCard/ui/TeamsCard.vue'
-
-  type RawActivityEntry = {
-    event: ActivityItem['event']
-    status: ActivityItem['status']
-    teamId: number | null
-  }
 
   const user = computed(() => authState.currentUser.value)
-  const activityFilter = ref<'all' | 'hackathon' | 'win'>('all')
+  const activityFilter = ref<ActivityFilter>('all')
 
-  const activityItems = ref<ActivityItem[]>([])
-  const teams = ref<TeamEntry[]>([])
-  const loadingActivity = ref(true)
-  const loadingTeams = ref(true)
+  const { activityItems, teams, isLoadingActivity, isLoadingTeams, load } = useUserActivity(
+    user.value?.id ?? 0,
+    user.value?.roles[0]?.name,
+  )
 
-  onMounted(async () => {
-    const userId = user.value?.id
-    if (!userId) return
-
-    try {
-      // ── Activity ────────────────────────────────────────
-      const eventsRes = await eventApi.getList({ limit: 50 })
-      const events = eventsRes.data
-
-      const ratingResults = await Promise.all(
-        events.map((event) => eventApi.getRatings(event.id).catch((): null => null)),
-      )
-
-      const raw: RawActivityEntry[] = []
-      const teamIdsNeeded = new Set<number>()
-
-      ratingResults.forEach((res, i) => {
-        if (!res) return
-        const entry = res.ratings.find((r) => r.user_id === userId)
-        if (!entry) return
-        if (entry.team_id) teamIdsNeeded.add(entry.team_id)
-        raw.push({ event: events[i], status: entry.status, teamId: entry.team_id })
-      })
-
-      const teamNameMap = new Map<number, string>()
-      await Promise.all(
-        [...teamIdsNeeded].map((id) =>
-          teamApi.getById(id).then((t) => teamNameMap.set(id, t.name)).catch(() => {}),
-        ),
-      )
-
-      const teamWinCounts = new Map<number, number>()
-      raw.forEach(({ status, teamId }) => {
-        if (!teamId || (status !== 'winner' && status !== 'prize_winner')) return
-        teamWinCounts.set(teamId, (teamWinCounts.get(teamId) ?? 0) + 1)
-      })
-
-      activityItems.value = raw
-        .sort((a, b) => new Date(b.event.date).getTime() - new Date(a.event.date).getTime())
-        .map(({ event, status, teamId }) => ({
-          event,
-          status,
-          teamName: teamId ? (teamNameMap.get(teamId) ?? null) : null,
-        }))
-
-      loadingActivity.value = false
-
-      // ── Teams ──────────────────────────────────────────
-      const teamsRes = await teamApi.getList({ user_id: userId })
-      const fullTeams = await Promise.all(
-        teamsRes.data.map((t) => teamApi.getById(t.id).catch((): null => null)),
-      )
-
-      teams.value = fullTeams
-        .filter((t): t is TeamResponse => t !== null)
-        .map((team): TeamEntry => ({
-          id: team.id,
-          name: team.name,
-          role: user.value?.roles[0]?.name ?? 'Участник',
-          isActive: team.events.length > 0,
-          winCount: teamWinCounts.get(team.id) ?? 0,
-          memberCount: team.users.length,
-        }))
-    } finally {
-      loadingActivity.value = false
-      loadingTeams.value = false
-    }
+  onMounted(() => {
+    if (user.value) load()
   })
 </script>
 
 <template>
   <div class="profile-page">
-    <!-- Session not yet initialized — show skeleton -->
     <div v-if="!authState.initialized.value" class="profile-skeleton">
       <div class="skel skel--avatar" />
       <div class="skel skel--name" />
@@ -125,7 +51,7 @@
       <div class="section">
         <ActivityFeed
           :items="activityItems"
-          :is-loading="false"
+          :is-loading="isLoadingActivity"
           :active-filter="activityFilter"
           @filter-change="activityFilter = $event"
           @navigate-to-event="(id) => $router.push(`/events/${id}`)"
@@ -139,7 +65,7 @@
       <div class="section">
         <TeamsCard
           :teams="teams"
-          :is-loading="false"
+          :is-loading="isLoadingTeams"
           @navigate-to-team="(id) => $router.push(`/teams/${id}`)"
         />
       </div>
@@ -149,18 +75,7 @@
 
 <style scoped lang="scss">
   .profile-page {
-    --p-bg:             #121212;
-    --p-surface:        #1c1c1e;
-    --p-border:         rgba(255, 255, 255, 0.08);
-    --p-accent:         #ff6b2b;
-    --p-text-primary:   #ffffff;
-    --p-text-secondary: rgba(255, 255, 255, 0.5);
-
-    min-height: 100dvh;
-    background: var(--p-bg);
-    color: var(--p-text-primary);
-    font-family: 'Manrope', 'IBM Plex Sans', sans-serif;
-    padding-bottom: 40px;
+    @include page-root;
   }
 
   .edit-bar {
@@ -174,17 +89,17 @@
     align-items: center;
     gap: 6px;
     padding: 7px 14px;
-    border-radius: 100px;
-    border: 1px solid var(--p-border);
-    color: var(--p-text-secondary);
+    border-radius: $radius-full;
+    border: 1px solid $color-border;
+    color: $color-text-secondary;
     font-size: 13px;
     font-weight: 500;
     text-decoration: none;
-    transition: border-color 150ms, color 150ms;
+    transition: border-color $transition-fast, color $transition-fast;
 
     &:hover {
-      border-color: var(--p-accent);
-      color: var(--p-accent);
+      border-color: $color-accent;
+      color: $color-accent;
       text-decoration: none;
     }
   }
@@ -194,13 +109,9 @@
     margin-top: 20px;
   }
 
-  /* ── Skeleton ──────────────────────────────────── */
-
   .profile-skeleton {
-    display: flex;
-    flex-direction: column;
+    @include flex-column(14px);
     align-items: center;
-    gap: 14px;
     padding: 32px 16px;
   }
 
@@ -210,36 +121,12 @@
   }
 
   .skel {
-    border-radius: 8px;
-    background: linear-gradient(90deg, #1e1e1e 25%, #282828 50%, #1e1e1e 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
+    border-radius: $radius-sm;
+    @include skeleton-shimmer;
 
-    &--avatar {
-      width: 88px;
-      height: 88px;
-      border-radius: 50%;
-    }
-
-    &--name {
-      height: 24px;
-      width: 160px;
-    }
-
-    &--roles {
-      height: 16px;
-      width: 200px;
-    }
-
-    &--stat {
-      height: 60px;
-      width: 72px;
-      border-radius: 12px;
-    }
-  }
-
-  @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    &--avatar { width: 88px; height: 88px; border-radius: 50%; }
+    &--name   { height: 24px; width: 160px; }
+    &--roles  { height: 16px; width: 200px; }
+    &--stat   { height: 60px; width: 72px; border-radius: $radius-lg; }
   }
 </style>

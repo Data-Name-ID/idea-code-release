@@ -14,11 +14,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    name: 'home',
-    component: () => import('@pages/home/ui/HomePage.vue'),
-    meta: {
-      requiresAuth: true,
-    },
+    redirect: '/profile',
   },
   {
     path: '/profile',
