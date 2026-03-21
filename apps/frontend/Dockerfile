@@ -1,8 +1,8 @@
 FROM node:20-alpine AS base
 WORKDIR /repo
-COPY package.json ./
+COPY package.json yarn.lock ./
 COPY apps/frontend/package.json apps/frontend/package.json
-RUN yarn install
+RUN yarn install --frozen-lockfile
 
 FROM base AS build
 ARG VITE_API_BASE_URL=http://localhost:8000

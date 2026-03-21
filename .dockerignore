@@ -1,0 +1,5 @@
+node_modules
+apps/frontend/node_modules
+apps/frontend/dist
+apps/frontend/.vite
+**/.DS_Store
