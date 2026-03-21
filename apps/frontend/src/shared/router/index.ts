@@ -55,7 +55,7 @@ router.beforeEach(async (to) => {
   }
 
   if (guestOnly && isAuthenticated) {
-    return { name: 'home' }
+    return { name: 'profile' }
   }
 
   return true
