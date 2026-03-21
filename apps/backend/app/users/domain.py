@@ -20,3 +20,11 @@ class AuthUser(Struct, kw_only=True, frozen=True):
     first_name: str
     last_name: str | None
     photo_url: str | None
+
+
+class LinkData(Struct, kw_only=True, frozen=True):
+    url: str
+    label: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"url": self.url, "label": self.label}

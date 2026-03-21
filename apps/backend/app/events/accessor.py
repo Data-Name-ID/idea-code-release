@@ -1,31 +1,39 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import Integer, delete, func, insert, literal, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
 from app.core.accessors import BaseAccessor
-from app.core.db import with_single_session, with_transaction
+from app.core.db import with_transaction
 from app.events.models import EventModel, EventRatingModel
 
 
 class EventAccessor(BaseAccessor):
-    @with_single_session
     async def list_events(
         self,
         *,
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[list[EventModel], int]:
-        total = await self.store.db.scalar_one(
-            select(func.count(EventModel.id)),
-        )
-        result = await self.store.db.scalars(
-            select(EventModel)
+        result = await self.store.db.execute(
+            select(
+                EventModel,
+                func.count(EventModel.id).over().label("total"),
+            )
             .order_by(EventModel.date.desc())
             .offset(offset)
             .limit(limit),
         )
-        return list(result.all()), total
+        rows = result.all()
+        if rows:
+            return [row[0] for row in rows], int(rows[0][1])
+
+        if offset == 0:
+            return [], 0
+
+        total = await self.store.db.scalar_one(select(func.count(EventModel.id)))
+        return [], total
 
     async def get_event_by_id(self, event_id: int) -> EventModel | None:
         return await self.store.db.scalar(
@@ -44,18 +52,17 @@ class EventAccessor(BaseAccessor):
         cover: str | None = None,
         is_verify: bool = False,
     ) -> EventModel:
-        db = self.store.db
-        event = EventModel(
-            title=title,
-            description=description,
-            date=date,
-            cover=cover,
-            is_verify=is_verify,
+        return await self.store.db.scalar_one(
+            insert(EventModel)
+            .values(
+                title=title,
+                description=description,
+                date=date,
+                cover=cover,
+                is_verify=is_verify,
+            )
+            .returning(EventModel),
         )
-        db.add(event)
-        await db.flush()
-        await db.refresh(event)
-        return event
 
     @with_transaction
     async def update_event(
@@ -81,13 +88,23 @@ class EventAccessor(BaseAccessor):
         )
         return result.rowcount > 0
 
-    async def get_event_ratings(self, event_id: int) -> list[EventRatingModel]:
-        result = await self.store.db.scalars(
-            select(EventRatingModel).where(
-                EventRatingModel.event_id == event_id,
-            ),
+    async def get_event_ratings(
+        self,
+        event_id: int,
+    ) -> list[EventRatingModel] | None:
+        ratings_result = await self.store.db.scalars(
+            select(EventRatingModel).where(EventRatingModel.event_id == event_id),
         )
-        return list(result.all())
+        ratings = list(ratings_result.all())
+        if ratings:
+            return ratings
+
+        event_exists = await self.store.db.scalar(
+            select(EventModel.id).where(EventModel.id == event_id),
+        )
+        if event_exists is None:
+            return None
+        return []
 
     @with_transaction
     async def upsert_rating(
@@ -97,25 +114,39 @@ class EventAccessor(BaseAccessor):
         user_id: int,
         status: str,
         team_id: int | None = None,
-    ) -> EventRatingModel:
-        db = self.store.db
-        existing = await db.get(EventRatingModel, (event_id, user_id))
-        if existing:
-            existing.status = status
-            existing.team_id = team_id
-            existing.awarded_at = datetime.now(UTC)
-            await db.flush()
-            return existing
-
-        entry = EventRatingModel(
-            event_id=event_id,
-            user_id=user_id,
-            status=status,
-            team_id=team_id,
+    ) -> EventRatingModel | None:
+        awarded_at = datetime.now(UTC)
+        insert_stmt = pg_insert(EventRatingModel).from_select(
+            [
+                EventRatingModel.event_id.key,
+                EventRatingModel.user_id.key,
+                EventRatingModel.status.key,
+                EventRatingModel.team_id.key,
+                EventRatingModel.awarded_at.key,
+            ],
+            select(
+                EventModel.id,
+                literal(user_id),
+                literal(status),
+                literal(team_id, type_=Integer),
+                literal(awarded_at),
+            ).where(EventModel.id == event_id),
         )
-        db.add(entry)
-        await db.flush()
-        return entry
+        return await self.store.db.scalar(
+            insert_stmt
+            .on_conflict_do_update(
+                index_elements=[
+                    EventRatingModel.event_id,
+                    EventRatingModel.user_id,
+                ],
+                set_={
+                    EventRatingModel.status.key: insert_stmt.excluded.status,
+                    EventRatingModel.team_id.key: insert_stmt.excluded.team_id,
+                    EventRatingModel.awarded_at.key: insert_stmt.excluded.awarded_at,
+                },
+            )
+            .returning(EventRatingModel),
+        )
 
     @with_transaction
     async def delete_rating(self, event_id: int, user_id: int) -> bool:

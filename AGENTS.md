@@ -83,6 +83,10 @@ PR description must include:
 - Keep edits inside owned scope unless task explicitly requires cross-scope changes.
 - If a task requires cross-scope edits, call out impacted owners in handoff notes.
 - Avoid hidden assumptions: document defaults in code comments or README when behavior is implicit.
+- For backend data writes, prefer SQLAlchemy Core statements (`insert`, `update`, `delete`) instead of session ORM mutation flow (`add`, `flush`, `refresh`, `get`).
+- Minimize DB round-trips: when possible, combine logic into a single SQL statement (CTE, `returning`, `on_conflict_*`, bulk operations) instead of multiple sequential queries.
+- Avoid `N+1` query patterns; use explicit eager loading (`selectinload`/`joinedload`) or set-based queries/joins and validate list endpoints for query count growth.
+- Prefer typed structures (e.g., `Struct`/domain objects) over raw `dict` at service and accessor boundaries; keep `dict` only where required by external libraries/SQLAlchemy payload APIs.
 
 ## Escalation
 

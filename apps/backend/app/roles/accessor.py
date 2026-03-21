@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, insert, select, update
 
 from app.core.accessors import BaseAccessor
 from app.core.db import with_transaction
@@ -19,12 +19,9 @@ class RoleAccessor(BaseAccessor):
 
     @with_transaction
     async def create_role(self, *, name: str) -> RoleModel:
-        db = self.store.db
-        role = RoleModel(name=name)
-        db.add(role)
-        await db.flush()
-        await db.refresh(role)
-        return role
+        return await self.store.db.scalar_one(
+            insert(RoleModel).values(name=name).returning(RoleModel),
+        )
 
     @with_transaction
     async def update_role(self, role_id: int, *, name: str) -> RoleModel | None:

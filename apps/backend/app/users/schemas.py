@@ -8,6 +8,7 @@ from msgspec import Struct
 
 from app.roles.schemas import RoleResponse
 from app.skills.schemas import SkillResponse
+from app.users.domain import LinkData
 
 if TYPE_CHECKING:
     from app.users.models import UserModel
@@ -48,8 +49,8 @@ class LinkRequest(Struct, kw_only=True):
     url: str
     label: str
 
-    def to_dict(self) -> dict[str, str]:
-        return {"url": self.url, "label": self.label}
+    def to_domain(self) -> LinkData:
+        return LinkData(url=self.url, label=self.label)
 
 
 class LinkResponse(Struct, kw_only=True):
@@ -58,12 +59,16 @@ class LinkResponse(Struct, kw_only=True):
     type: LinkType
 
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> Self:
+    def from_link(cls, data: LinkData) -> Self:
         return cls(
-            url=data["url"],
-            label=data["label"],
-            type=detect_link_type(data["url"]),
+            url=data.url,
+            label=data.label,
+            type=detect_link_type(data.url),
         )
+
+    @classmethod
+    def from_dict(cls, data: dict[str, str]) -> Self:
+        return cls.from_link(LinkData(url=data["url"], label=data["label"]))
 
 
 class UserResponse(Struct, kw_only=True):
@@ -134,8 +139,8 @@ class UserCreateRequest(Struct, kw_only=True):
     role_ids: list[int] = []
     skill_ids: list[int] = []
 
-    def dump_links(self) -> list[dict[str, str]]:
-        return [link.to_dict() for link in self.links]
+    def dump_links(self) -> list[LinkData]:
+        return [link.to_domain() for link in self.links]
 
 
 class UserUpdateRequest(Struct, kw_only=True):
@@ -148,7 +153,7 @@ class UserUpdateRequest(Struct, kw_only=True):
     role_ids: list[int] | None = None
     skill_ids: list[int] | None = None
 
-    def dump_links(self) -> list[dict[str, str]] | None:
+    def dump_links(self) -> list[LinkData] | None:
         if self.links is None:
             return None
-        return [link.to_dict() for link in self.links]
+        return [link.to_domain() for link in self.links]

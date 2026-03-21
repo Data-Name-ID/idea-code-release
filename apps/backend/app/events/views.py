@@ -81,11 +81,10 @@ class EventController(Controller):
 
     @get(path="/{event_id:int}/ratings", exclude_from_auth=True)
     async def get_ratings(self, store: Store, event_id: int) -> EventRatingResponse:
-        event = await store.events.get_event_by_id(event_id)
-        if event is None:
+        ratings = await store.events.get_event_ratings(event_id)
+        if ratings is None:
             raise NotFoundException(detail="Event not found")
 
-        ratings = await store.events.get_event_ratings(event_id)
         return EventRatingResponse(
             event_id=event_id,
             ratings=[EventRatingEntryResponse.from_model(r) for r in ratings],
@@ -101,16 +100,14 @@ class EventController(Controller):
         event_id: int,
         data: EventRatingCreateRequest,
     ) -> EventRatingEntryResponse:
-        event = await store.events.get_event_by_id(event_id)
-        if event is None:
-            raise NotFoundException(detail="Event not found")
-
         entry = await store.events.upsert_rating(
             event_id=event_id,
             user_id=data.user_id,
             status=data.status,
             team_id=data.team_id,
         )
+        if entry is None:
+            raise NotFoundException(detail="Event not found")
         return EventRatingEntryResponse.from_model(entry)
 
     @delete(

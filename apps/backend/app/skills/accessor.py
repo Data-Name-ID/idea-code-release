@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, insert, select, update
 
 from app.core.accessors import BaseAccessor
 from app.core.db import with_transaction
@@ -19,12 +19,9 @@ class SkillAccessor(BaseAccessor):
 
     @with_transaction
     async def create_skill(self, *, name: str) -> SkillModel:
-        db = self.store.db
-        skill = SkillModel(name=name)
-        db.add(skill)
-        await db.flush()
-        await db.refresh(skill)
-        return skill
+        return await self.store.db.scalar_one(
+            insert(SkillModel).values(name=name).returning(SkillModel),
+        )
 
     @with_transaction
     async def update_skill(self, skill_id: int, *, name: str) -> SkillModel | None:

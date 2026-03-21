@@ -93,36 +93,6 @@ class DatabaseAccessor(BaseAccessor):
     def get_current_session(self) -> AsyncSession | None:
         return self._current_session.get()
 
-    def _require_session(self) -> AsyncSession:
-        session = self._current_session.get()
-        if session is None:
-            msg = "No active session — use @with_transaction or @with_single_session"
-            raise RuntimeError(msg)
-        return session
-
-    def add(self, instance: Any) -> None:
-        self._require_session().add(instance)
-
-    async def flush(self) -> None:
-        await self._require_session().flush()
-
-    async def refresh(
-        self,
-        instance: Any,
-        attribute_names: Sequence[str] | None = None,
-    ) -> None:
-        await self._require_session().refresh(
-            instance,
-            attribute_names=attribute_names,
-        )
-
-    async def get(
-        self,
-        entity: type[_T],
-        ident: Any,
-    ) -> _T | None:
-        return await self._require_session().get(entity, ident)
-
     @overload
     async def execute(
         self,

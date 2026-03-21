@@ -1,14 +1,14 @@
 from datetime import datetime
 
-from sqlalchemy import delete, func, select
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
 from app.core.accessors import BaseAccessor
-from app.core.db import with_single_session, with_transaction
+from app.core.db import with_transaction
 from app.roles.models import RoleModel
 from app.skills.models import SkillModel
-from app.users.domain import AuthUser, TelegramIdentityInput
+from app.users.domain import AuthUser, LinkData, TelegramIdentityInput
 from app.users.models import TelegramIdentityModel, UserModel, user_roles, user_skills
 
 
@@ -40,7 +40,7 @@ class UserAccessor(BaseAccessor):
             )
             user_id = await self.store.db.scalar_one(stmt_user_insert)
 
-        stmt = insert(TelegramIdentityModel).values(
+        stmt = pg_insert(TelegramIdentityModel).values(
             user_id=user_id,
             telegram_user_id=telegram_identity.telegram_user_id,
             username=telegram_identity.username,
@@ -116,7 +116,6 @@ class UserAccessor(BaseAccessor):
 
     # ── Profile CRUD ──
 
-    @with_single_session
     async def get_user_by_id(self, user_id: int) -> UserModel | None:
         return await self.store.db.scalar(
             select(UserModel)
@@ -124,7 +123,6 @@ class UserAccessor(BaseAccessor):
             .where(UserModel.id == user_id),
         )
 
-    @with_single_session
     async def list_users(
         self,
         *,
@@ -134,11 +132,13 @@ class UserAccessor(BaseAccessor):
         role_id: int | None = None,
         skill_id: int | None = None,
     ) -> tuple[list[UserModel], int]:
-        stmt = select(UserModel).options(
+        stmt = select(
+            UserModel,
+            func.count(UserModel.id).over().label("total"),
+        ).options(
             selectinload(UserModel.roles),
             selectinload(UserModel.skills),
         )
-        count_stmt = select(func.count(UserModel.id))
 
         if search:
             pattern = f"%{search}%"
@@ -146,24 +146,39 @@ class UserAccessor(BaseAccessor):
                 pattern,
             )
             stmt = stmt.where(filter_clause)
-            count_stmt = count_stmt.where(filter_clause)
 
         if role_id is not None:
             stmt = stmt.join(user_roles).where(user_roles.c.role_id == role_id)
-            count_stmt = count_stmt.join(user_roles).where(
-                user_roles.c.role_id == role_id,
-            )
 
         if skill_id is not None:
             stmt = stmt.join(user_skills).where(user_skills.c.skill_id == skill_id)
-            count_stmt = count_stmt.join(user_skills).where(
+
+        result = await self.store.db.execute(stmt.offset(offset).limit(limit))
+        rows = result.all()
+        if rows:
+            return [row[0] for row in rows], int(rows[0][1])
+
+        if offset == 0:
+            return [], 0
+
+        fallback_count_stmt = select(func.count(UserModel.id))
+        if search:
+            pattern = f"%{search}%"
+            fallback_filter = UserModel.name.ilike(pattern) | UserModel.username.ilike(
+                pattern,
+            )
+            fallback_count_stmt = fallback_count_stmt.where(fallback_filter)
+        if role_id is not None:
+            fallback_count_stmt = fallback_count_stmt.join(user_roles).where(
+                user_roles.c.role_id == role_id,
+            )
+        if skill_id is not None:
+            fallback_count_stmt = fallback_count_stmt.join(user_skills).where(
                 user_skills.c.skill_id == skill_id,
             )
 
-        total = await self.store.db.scalar_one(count_stmt)
-        stmt = stmt.offset(offset).limit(limit)
-        result = await self.store.db.scalars(stmt)
-        return list(result.all()), total
+        total = await self.store.db.scalar_one(fallback_count_stmt)
+        return [], total
 
     @with_transaction
     async def create_user(
@@ -175,25 +190,28 @@ class UserAccessor(BaseAccessor):
         avatar: str | None = None,
         description: str = "",
         location: str = "",
-        links: list[dict] | None = None,
+        links: list[LinkData] | None = None,
         role_ids: list[int] | None = None,
         skill_ids: list[int] | None = None,
     ) -> UserModel:
-        db = self.store.db
-        user = UserModel(
-            username=username,
-            name=name,
-            email=email,
-            avatar=avatar,
-            description=description,
-            location=location,
-            links=links or [],
+        user_id = await self.store.db.scalar_one(
+            insert(UserModel)
+            .values(
+                username=username,
+                name=name,
+                email=email,
+                avatar=avatar,
+                description=description,
+                location=location,
+                links=self._serialize_links(links) or [],
+            )
+            .returning(UserModel.id),
         )
-        db.add(user)
-        await db.flush()
-        await self._apply_relations(user, role_ids=role_ids, skill_ids=skill_ids)
-        await db.flush()
-        await db.refresh(user, attribute_names=["roles", "skills"])
+        await self._apply_relations(user_id, role_ids=role_ids, skill_ids=skill_ids)
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            msg = "User was created but cannot be loaded"
+            raise RuntimeError(msg)
         return user
 
     @with_transaction
@@ -206,28 +224,32 @@ class UserAccessor(BaseAccessor):
         avatar: str | None = None,
         description: str | None = None,
         location: str | None = None,
-        links: list[dict] | None = None,
+        links: list[LinkData] | None = None,
         role_ids: list[int] | None = None,
         skill_ids: list[int] | None = None,
     ) -> UserModel | None:
-        db = self.store.db
-        user = await db.get(UserModel, user_id)
-        if user is None:
-            return None
-
-        self._apply_scalar_fields(
-            user,
+        values = self._collect_scalar_values(
             name=name,
             email=email,
             avatar=avatar,
             description=description,
             location=location,
-            links=links,
+            links=self._serialize_links(links),
         )
-        await self._apply_relations(user, role_ids=role_ids, skill_ids=skill_ids)
-        await db.flush()
-        await db.refresh(user, attribute_names=["roles", "skills"])
-        return user
+        if values:
+            updated_user_id = await self.store.db.scalar(
+                update(UserModel)
+                .where(UserModel.id == user_id)
+                .values(**values)
+                .returning(UserModel.id),
+            )
+            if updated_user_id is None:
+                return None
+        elif await self.get_user_by_id(user_id) is None:
+            return None
+
+        await self._apply_relations(user_id, role_ids=role_ids, skill_ids=skill_ids)
+        return await self.get_user_by_id(user_id)
 
     @with_transaction
     async def delete_user(self, user_id: int) -> bool:
@@ -237,14 +259,18 @@ class UserAccessor(BaseAccessor):
         return result.rowcount > 0
 
     @staticmethod
-    def _apply_scalar_fields(user: UserModel, **kwargs: object) -> None:
-        for field, value in kwargs.items():
-            if value is not None:
-                setattr(user, field, value)
+    def _collect_scalar_values(**kwargs: object) -> dict[str, object]:
+        return {field: value for field, value in kwargs.items() if value is not None}
+
+    @staticmethod
+    def _serialize_links(links: list[LinkData] | None) -> list[dict[str, str]] | None:
+        if links is None:
+            return None
+        return [link.to_dict() for link in links]
 
     async def _apply_relations(
         self,
-        user: UserModel,
+        user_id: int,
         *,
         role_ids: list[int] | None = None,
         skill_ids: list[int] | None = None,
@@ -253,21 +279,48 @@ class UserAccessor(BaseAccessor):
             return
 
         db = self.store.db
-        attrs = []
         if role_ids is not None:
-            attrs.append("roles")
-        if skill_ids is not None:
-            attrs.append("skills")
-        await db.refresh(user, attribute_names=attrs)
+            await db.execute(delete(user_roles).where(user_roles.c.user_id == user_id))
+            if role_ids:
+                role_result = await db.scalars(
+                    select(RoleModel.id).where(RoleModel.id.in_(role_ids)),
+                )
+                role_values = [
+                    {"user_id": user_id, "role_id": role_id}
+                    for role_id in role_result.all()
+                ]
+                if role_values:
+                    await db.execute(
+                        pg_insert(user_roles)
+                        .values(role_values)
+                        .on_conflict_do_nothing(
+                            index_elements=[
+                                user_roles.c.user_id,
+                                user_roles.c.role_id,
+                            ],
+                        ),
+                    )
 
-        if role_ids is not None:
-            result = await db.scalars(
-                select(RoleModel).where(RoleModel.id.in_(role_ids)),
-            )
-            user.roles = list(result.all())
-
         if skill_ids is not None:
-            result = await db.scalars(
-                select(SkillModel).where(SkillModel.id.in_(skill_ids)),
+            await db.execute(
+                delete(user_skills).where(user_skills.c.user_id == user_id),
             )
-            user.skills = list(result.all())
+            if skill_ids:
+                skill_result = await db.scalars(
+                    select(SkillModel.id).where(SkillModel.id.in_(skill_ids)),
+                )
+                skill_values = [
+                    {"user_id": user_id, "skill_id": skill_id}
+                    for skill_id in skill_result.all()
+                ]
+                if skill_values:
+                    await db.execute(
+                        pg_insert(user_skills)
+                        .values(skill_values)
+                        .on_conflict_do_nothing(
+                            index_elements=[
+                                user_skills.c.user_id,
+                                user_skills.c.skill_id,
+                            ],
+                        ),
+                    )
