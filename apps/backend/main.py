@@ -78,8 +78,6 @@ app = Litestar(
     ),
     plugins=(
         InitPlugin(
-            app_name="api",
-            app_version="1.0.0",
             store=store,
         ),
     ),

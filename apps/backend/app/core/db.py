@@ -1,4 +1,3 @@
-from asyncio import current_task
 from collections.abc import AsyncGenerator, Callable, Sequence
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
@@ -10,7 +9,6 @@ from sqlalchemy.engine import CursorResult, Result, ScalarResult
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
-    async_scoped_session,
     async_sessionmaker,
     create_async_engine,
 )
@@ -69,6 +67,7 @@ class DatabaseAccessor(BaseAccessor):
 
         await self._engine.dispose()
         self._engine = None
+        self._session_maker = None
 
     @property
     def session_maker(self) -> async_sessionmaker:
@@ -80,19 +79,16 @@ class DatabaseAccessor(BaseAccessor):
 
     @asynccontextmanager
     async def session(self) -> AsyncGenerator[AsyncSession, None]:
-        scoped_session = async_scoped_session(
-            session_factory=self.session_maker,
-            scopefunc=current_task,
-        )
-
-        async with scoped_session() as session:
+        async with self.session_maker() as session:
             token = self._current_session.set(session)
-
-            yield session
-            await session.commit()
-
-            self._current_session.reset(token)
-            await scoped_session.remove()
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                self._current_session.reset(token)
 
     def get_current_session(self) -> AsyncSession | None:
         return self._current_session.get()
@@ -180,17 +176,6 @@ class DatabaseAccessor(BaseAccessor):
 
 
 @asynccontextmanager
-async def single_session(db: DatabaseAccessor) -> AsyncGenerator[AsyncSession, None]:
-    session = db.get_current_session()
-
-    if session:
-        yield session
-    else:
-        async with db.session() as session:
-            yield session
-
-
-@asynccontextmanager
 async def transaction(db: DatabaseAccessor) -> AsyncGenerator[AsyncSession, None]:
     session = db.get_current_session()
 
@@ -200,15 +185,6 @@ async def transaction(db: DatabaseAccessor) -> AsyncGenerator[AsyncSession, None
     else:
         async with db.session() as session, session.begin():
             yield session
-
-
-def with_single_session(method: Callable) -> Callable:
-    @wraps(method)
-    async def wrapper(self: BaseAccessor, *args: Any, **kwargs: Any) -> Any:
-        async with single_session(self.store.db):
-            return await method(self, *args, **kwargs)
-
-    return wrapper
 
 
 def with_transaction(method: Callable) -> Callable:
