@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from litestar import Controller, Request, Response, get, post, status_codes
 from litestar.datastructures import Cookie
@@ -6,7 +6,6 @@ from litestar.exceptions import (
     NotAuthorizedException,
     NotFoundException,
 )
-from litestar.security.jwt import JWTCookieAuth, Token
 
 from app.auth.schemas import (
     AuthUserData,
@@ -16,13 +15,19 @@ from app.auth.schemas import (
     TelegramLoginRequest,
 )
 from app.auth.service import (
+    ACCESS_TOKEN_TYPE,
+    InvalidRefreshTokenError,
     assert_telegram_auth_configured,
+    decode_refresh_token,
     validate_telegram_login_payload,
 )
 from app.core.schemas import OkResponse
 from app.core.store import Store
 from app.users.domain import TelegramIdentityInput
 from app.users.schemas import UserResponse
+
+if TYPE_CHECKING:
+    from litestar.security.jwt import JWTCookieAuth
 
 
 class AuthController(Controller):
@@ -91,23 +96,19 @@ class AuthController(Controller):
         config = store.config.security.jwt
 
         try:
-            token = Token.decode(
+            token = decode_refresh_token(
                 encoded_token=data.refresh_token,
                 secret=config.token_secret,
-                algorithm="HS256",
             )
-        except (ValueError, KeyError):
+        except InvalidRefreshTokenError as exc:
             raise NotAuthorizedException(
-                detail="Invalid or expired refresh token",
+                detail=str(exc),
             ) from None
-
-        if token.extras.get("type") != "refresh":
-            raise NotAuthorizedException(detail="Invalid token type")
 
         jwt_auth = cast("JWTCookieAuth[Any]", request.app.state["jwt_auth"])
         access_token = jwt_auth.create_token(
             identifier=token.sub,
-            token_extras={"type": "access"},
+            token_extras={"type": ACCESS_TOKEN_TYPE},
         )
 
         return RefreshResponse(

@@ -14,6 +14,7 @@ import app.events.urls as events_urls
 import app.roles.urls as roles_urls
 import app.skills.urls as skills_urls
 import app.users.urls as users_urls
+from app.auth.service import is_refresh_token
 from app.core.config import create_config
 from app.core.store import Store
 from app.users.domain import UserAuth
@@ -27,7 +28,7 @@ def retrieve_user_handler(
     token: Token,
     _: ASGIConnection[Any, Any, Any, Any],
 ) -> UserAuth | None:
-    if token.extras.get("type") == "refresh":
+    if is_refresh_token(token):
         return None
     return UserAuth(id=int(token.sub))
 

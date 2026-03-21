@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import Select, delete, func, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
@@ -132,53 +132,31 @@ class UserAccessor(BaseAccessor):
         role_id: int | None = None,
         skill_id: int | None = None,
     ) -> tuple[list[UserModel], int]:
-        stmt = select(
-            UserModel,
-            func.count(UserModel.id).over().label("total"),
-        ).options(
-            selectinload(UserModel.roles),
-            selectinload(UserModel.skills),
+        filtered_user_ids = self._build_filtered_user_ids_stmt(
+            search=search,
+            role_id=role_id,
+            skill_id=skill_id,
         )
-
-        if search:
-            pattern = f"%{search}%"
-            filter_clause = UserModel.name.ilike(pattern) | UserModel.username.ilike(
-                pattern,
-            )
-            stmt = stmt.where(filter_clause)
-
-        if role_id is not None:
-            stmt = stmt.join(user_roles).where(user_roles.c.role_id == role_id)
-
-        if skill_id is not None:
-            stmt = stmt.join(user_skills).where(user_skills.c.skill_id == skill_id)
-
-        result = await self.store.db.execute(stmt.offset(offset).limit(limit))
-        rows = result.all()
-        if rows:
-            return [row[0] for row in rows], int(rows[0][1])
-
-        if offset == 0:
+        total = int(
+            await self.store.db.scalar_one(
+                select(func.count()).select_from(filtered_user_ids.subquery()),
+            ),
+        )
+        if total == 0:
             return [], 0
 
-        fallback_count_stmt = select(func.count(UserModel.id))
-        if search:
-            pattern = f"%{search}%"
-            fallback_filter = UserModel.name.ilike(pattern) | UserModel.username.ilike(
-                pattern,
+        page_user_ids = (
+            filtered_user_ids.order_by(UserModel.id).offset(offset).limit(limit).subquery()
+        )
+        users = (
+            await self.store.db.scalars(
+                select(UserModel)
+                .join(page_user_ids, UserModel.id == page_user_ids.c.id)
+                .options(selectinload(UserModel.roles), selectinload(UserModel.skills))
+                .order_by(UserModel.id),
             )
-            fallback_count_stmt = fallback_count_stmt.where(fallback_filter)
-        if role_id is not None:
-            fallback_count_stmt = fallback_count_stmt.join(user_roles).where(
-                user_roles.c.role_id == role_id,
-            )
-        if skill_id is not None:
-            fallback_count_stmt = fallback_count_stmt.join(user_skills).where(
-                user_skills.c.skill_id == skill_id,
-            )
-
-        total = await self.store.db.scalar_one(fallback_count_stmt)
-        return [], total
+        ).all()
+        return list(users), total
 
     @with_transaction
     async def create_user(
@@ -261,6 +239,38 @@ class UserAccessor(BaseAccessor):
     @staticmethod
     def _collect_scalar_values(**kwargs: object) -> dict[str, object]:
         return {field: value for field, value in kwargs.items() if value is not None}
+
+    @staticmethod
+    def _build_user_search_pattern(search: str) -> str:
+        return f"%{search}%"
+
+    def _build_filtered_user_ids_stmt(
+        self,
+        *,
+        search: str | None = None,
+        role_id: int | None = None,
+        skill_id: int | None = None,
+    ) -> Select[tuple[int]]:
+        stmt = select(UserModel.id)
+
+        if search:
+            pattern = self._build_user_search_pattern(search)
+            stmt = stmt.where(
+                UserModel.name.ilike(pattern) | UserModel.username.ilike(pattern),
+            )
+
+        if role_id is not None:
+            stmt = stmt.join(user_roles, user_roles.c.user_id == UserModel.id).where(
+                user_roles.c.role_id == role_id,
+            )
+
+        if skill_id is not None:
+            stmt = stmt.join(
+                user_skills,
+                user_skills.c.user_id == UserModel.id,
+            ).where(user_skills.c.skill_id == skill_id)
+
+        return stmt.distinct()
 
     @staticmethod
     def _serialize_links(links: list[LinkData] | None) -> list[dict[str, str]] | None:
