@@ -1,4 +1,0 @@
-interface:
-  display_name: "Frontend Vue Feature Flow"
-  short_description: "Build Vue features with strict quality gates."
-  default_prompt: "Implement a frontend change in apps/frontend, preserve route/env contracts, and provide lint/typecheck verification."

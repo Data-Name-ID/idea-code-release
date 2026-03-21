@@ -1,4 +1,0 @@
-interface:
-  display_name: "PR Quality Gate"
-  short_description: "Run required checks and prepare PR summary."
-  default_prompt: "Run the monorepo quality gates, summarize results, and report risks before PR."
