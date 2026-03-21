@@ -124,7 +124,9 @@ def upgrade() -> None:
             INSERT INTO roles (name)
             VALUES
                 ('mock-role-1383319031'),
-                ('mock-role-1677128852')
+                ('mock-role-1677128852'),
+                ('mock-role-community-builder'),
+                ('mock-role-event-speaker')
             ON CONFLICT (name) DO NOTHING
             """,
         ),
@@ -136,7 +138,10 @@ def upgrade() -> None:
             INSERT INTO skills (name)
             VALUES
                 ('mock-skill-1383319031'),
-                ('mock-skill-1677128852')
+                ('mock-skill-1677128852'),
+                ('mock-skill-python'),
+                ('mock-skill-vue'),
+                ('mock-skill-postgresql')
             ON CONFLICT (name) DO NOTHING
             """,
         ),
@@ -155,7 +160,10 @@ def upgrade() -> None:
                 FROM (
                     VALUES
                         (1383319031::bigint, 'mock-role-1383319031'),
-                        (1677128852::bigint, 'mock-role-1677128852')
+                        (1383319031::bigint, 'mock-role-community-builder'),
+                        (1383319031::bigint, 'mock-role-event-speaker'),
+                        (1677128852::bigint, 'mock-role-1677128852'),
+                        (1677128852::bigint, 'mock-role-community-builder')
                 ) AS v(telegram_user_id, role_name)
             )
             INSERT INTO user_roles (user_id, role_id)
@@ -183,7 +191,11 @@ def upgrade() -> None:
                 FROM (
                     VALUES
                         (1383319031::bigint, 'mock-skill-1383319031'),
-                        (1677128852::bigint, 'mock-skill-1677128852')
+                        (1383319031::bigint, 'mock-skill-python'),
+                        (1383319031::bigint, 'mock-skill-postgresql'),
+                        (1677128852::bigint, 'mock-skill-1677128852'),
+                        (1677128852::bigint, 'mock-skill-vue'),
+                        (1677128852::bigint, 'mock-skill-postgresql')
                 ) AS v(telegram_user_id, skill_name)
             )
             INSERT INTO user_skills (user_id, skill_id)
@@ -212,8 +224,8 @@ def upgrade() -> None:
             )
             VALUES
                 (
-                    'mock-event-1383319031',
-                    'Mock event for Telegram user 1383319031',
+                    'mock-event-1383319031-kickoff',
+                    'Kickoff event for Telegram user 1383319031',
                     timezone('utc', now()) + interval '7 days',
                     'https://images.unsplash.com/photo-1521737711867-e3b97375f902',
                     TRUE,
@@ -221,10 +233,37 @@ def upgrade() -> None:
                     timezone('utc', now())
                 ),
                 (
-                    'mock-event-1677128852',
-                    'Mock event for Telegram user 1677128852',
+                    'mock-event-1383319031-demo-day',
+                    'Demo day for Telegram user 1383319031',
+                    timezone('utc', now()) + interval '10 days',
+                    'https://images.unsplash.com/photo-1519389950473-47ba0277781c',
+                    TRUE,
+                    timezone('utc', now()),
+                    timezone('utc', now())
+                ),
+                (
+                    'mock-event-1677128852-workshop',
+                    'Workshop event for Telegram user 1677128852',
                     timezone('utc', now()) + interval '14 days',
                     'https://images.unsplash.com/photo-1515169067865-5387ec356754',
+                    TRUE,
+                    timezone('utc', now()),
+                    timezone('utc', now())
+                ),
+                (
+                    'mock-event-1677128852-demo-night',
+                    'Demo night for Telegram user 1677128852',
+                    timezone('utc', now()) + interval '21 days',
+                    'https://images.unsplash.com/photo-1511578314322-379afb476865',
+                    TRUE,
+                    timezone('utc', now()),
+                    timezone('utc', now())
+                ),
+                (
+                    'mock-event-joint-community-session',
+                    'Joint community session for both Telegram users',
+                    timezone('utc', now()) + interval '28 days',
+                    'https://images.unsplash.com/photo-1528605248644-14dd04022da1',
                     TRUE,
                     timezone('utc', now()),
                     timezone('utc', now())
@@ -245,8 +284,66 @@ def upgrade() -> None:
                 SELECT *
                 FROM (
                     VALUES
-                        ('mock-event-1383319031', 1383319031::bigint, 'owner', 1),
-                        ('mock-event-1677128852', 1677128852::bigint, 'owner', 2)
+                        (
+                            'mock-event-1383319031-kickoff',
+                            1383319031::bigint,
+                            'owner',
+                            11
+                        ),
+                        (
+                            'mock-event-1383319031-kickoff',
+                            1677128852::bigint,
+                            'member',
+                            11
+                        ),
+                        (
+                            'mock-event-1383319031-demo-day',
+                            1383319031::bigint,
+                            'winner',
+                            12
+                        ),
+                        (
+                            'mock-event-1383319031-demo-day',
+                            1677128852::bigint,
+                            'member',
+                            12
+                        ),
+                        (
+                            'mock-event-1677128852-workshop',
+                            1677128852::bigint,
+                            'owner',
+                            21
+                        ),
+                        (
+                            'mock-event-1677128852-workshop',
+                            1383319031::bigint,
+                            'member',
+                            21
+                        ),
+                        (
+                            'mock-event-1677128852-demo-night',
+                            1677128852::bigint,
+                            'winner',
+                            22
+                        ),
+                        (
+                            'mock-event-1677128852-demo-night',
+                            1383319031::bigint,
+                            'member',
+                            22
+                        ),
+                        (
+                            'mock-event-joint-community-session',
+                            1383319031::bigint,
+                            'speaker',
+                            99
+                        ),
+                        (
+                            'mock-event-joint-community-session',
+                            1677128852::bigint,
+                            'speaker',
+                            99
+                        )
                 ) AS v(event_title, telegram_user_id, status, team_id)
             )
             INSERT INTO event_ratings (event_id, user_id, status, team_id, awarded_at)
@@ -274,7 +371,13 @@ def downgrade() -> None:
             USING events AS e, telegram_identities AS ti
             WHERE er.event_id = e.id
               AND er.user_id = ti.user_id
-              AND e.title IN ('mock-event-1383319031', 'mock-event-1677128852')
+              AND e.title IN (
+                  'mock-event-1383319031-kickoff',
+                  'mock-event-1383319031-demo-day',
+                  'mock-event-1677128852-workshop',
+                  'mock-event-1677128852-demo-night',
+                  'mock-event-joint-community-session'
+              )
               AND ti.telegram_user_id IN (1383319031, 1677128852)
             """,
         ),
@@ -284,7 +387,13 @@ def downgrade() -> None:
         sa.text(
             """
             DELETE FROM events
-            WHERE title IN ('mock-event-1383319031', 'mock-event-1677128852')
+            WHERE title IN (
+                'mock-event-1383319031-kickoff',
+                'mock-event-1383319031-demo-day',
+                'mock-event-1677128852-workshop',
+                'mock-event-1677128852-demo-night',
+                'mock-event-joint-community-session'
+            )
             """,
         ),
     )
@@ -296,7 +405,12 @@ def downgrade() -> None:
             USING roles AS r, telegram_identities AS ti
             WHERE ur.role_id = r.id
               AND ur.user_id = ti.user_id
-              AND r.name IN ('mock-role-1383319031', 'mock-role-1677128852')
+              AND r.name IN (
+                  'mock-role-1383319031',
+                  'mock-role-1677128852',
+                  'mock-role-community-builder',
+                  'mock-role-event-speaker'
+              )
               AND ti.telegram_user_id IN (1383319031, 1677128852)
             """,
         ),
@@ -309,7 +423,13 @@ def downgrade() -> None:
             USING skills AS s, telegram_identities AS ti
             WHERE us.skill_id = s.id
               AND us.user_id = ti.user_id
-              AND s.name IN ('mock-skill-1383319031', 'mock-skill-1677128852')
+              AND s.name IN (
+                  'mock-skill-1383319031',
+                  'mock-skill-1677128852',
+                  'mock-skill-python',
+                  'mock-skill-vue',
+                  'mock-skill-postgresql'
+              )
               AND ti.telegram_user_id IN (1383319031, 1677128852)
             """,
         ),
@@ -319,7 +439,12 @@ def downgrade() -> None:
         sa.text(
             """
             DELETE FROM roles AS r
-            WHERE r.name IN ('mock-role-1383319031', 'mock-role-1677128852')
+            WHERE r.name IN (
+                'mock-role-1383319031',
+                'mock-role-1677128852',
+                'mock-role-community-builder',
+                'mock-role-event-speaker'
+            )
               AND NOT EXISTS (
                 SELECT 1
                 FROM user_roles AS ur
@@ -333,7 +458,13 @@ def downgrade() -> None:
         sa.text(
             """
             DELETE FROM skills AS s
-            WHERE s.name IN ('mock-skill-1383319031', 'mock-skill-1677128852')
+            WHERE s.name IN (
+                'mock-skill-1383319031',
+                'mock-skill-1677128852',
+                'mock-skill-python',
+                'mock-skill-vue',
+                'mock-skill-postgresql'
+            )
               AND NOT EXISTS (
                 SELECT 1
                 FROM user_skills AS us
