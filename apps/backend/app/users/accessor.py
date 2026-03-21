@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import cast
 
 from sqlalchemy import Select, delete, func, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -10,6 +11,15 @@ from app.roles.models import RoleModel
 from app.skills.models import SkillModel
 from app.users.domain import AuthUser, LinkData, TelegramIdentityInput
 from app.users.models import TelegramIdentityModel, UserModel, user_roles, user_skills
+
+type AuthUserRow = tuple[
+    int,
+    int,
+    str | None,
+    str,
+    str | None,
+    str | None,
+]
 
 
 class UserAccessor(BaseAccessor):
@@ -84,6 +94,33 @@ class UserAccessor(BaseAccessor):
             .where(UserModel.id == user_id)
         )
         row = await self.store.db.one_or_none(stmt)
+        return self._build_auth_user(cast("AuthUserRow | None", row))
+
+    async def get_auth_user_by_telegram_user_id(
+        self,
+        *,
+        telegram_user_id: int,
+    ) -> AuthUser | None:
+        stmt = (
+            select(
+                UserModel.id.label("id"),
+                TelegramIdentityModel.telegram_user_id.label("telegram_user_id"),
+                TelegramIdentityModel.username.label("username"),
+                TelegramIdentityModel.first_name.label("first_name"),
+                TelegramIdentityModel.last_name.label("last_name"),
+                TelegramIdentityModel.photo_url.label("photo_url"),
+            )
+            .join(
+                TelegramIdentityModel,
+                TelegramIdentityModel.user_id == UserModel.id,
+            )
+            .where(TelegramIdentityModel.telegram_user_id == telegram_user_id)
+        )
+        row = await self.store.db.one_or_none(stmt)
+        return self._build_auth_user(cast("AuthUserRow | None", row))
+
+    @staticmethod
+    def _build_auth_user(row: AuthUserRow | None) -> AuthUser | None:
         if row is None:
             return None
         (

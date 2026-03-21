@@ -44,6 +44,7 @@ jwt_auth = JWTCookieAuth[UserAuth](
         "/api/auth/telegram/config",
         "/api/auth/telegram/login",
         "/api/auth/refresh",
+        "/api/auth/dev/telegram/token",
     ],
     key=config.security.cookie.key,
     path=config.security.cookie.path,

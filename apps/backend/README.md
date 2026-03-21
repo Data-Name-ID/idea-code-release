@@ -78,3 +78,8 @@ Telegram-only authentication requires:
 
 - `APP_SECURITY__TELEGRAM__BOT_TOKEN`
 - `APP_SECURITY__TELEGRAM__BOT_USERNAME`
+
+Development-only shortcut endpoint (disabled by default):
+
+- `POST /api/auth/dev/telegram/token`
+- enable with `APP_SECURITY__DEV_AUTH_BY_TG_ID_ENABLED=true`
