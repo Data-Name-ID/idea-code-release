@@ -1,0 +1,3 @@
+[  524981ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://backend.icr-test.where-pizza.ru/api/auth/me:0
+[  659057ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5174/src/pages/auth/ui/AuthPage.vue?t=1774137143302:0
+[  659057ms] [ERROR] [vite] Failed to reload /src/pages/auth/ui/AuthPage.vue. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
