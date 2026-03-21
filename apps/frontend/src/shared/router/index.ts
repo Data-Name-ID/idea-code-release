@@ -29,6 +29,14 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/profile/edit',
+    name: 'profile-edit',
+    component: () => import('@pages/profile-edit/ui/ProfileEditPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@pages/not-found/ui/NotFoundPage.vue'),
