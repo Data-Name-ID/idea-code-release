@@ -130,7 +130,9 @@ class AuthController(Controller):
         data: DevAuthByTelegramIdRequest,
     ) -> OkResponse[DevAuthByTelegramIdResponse]:
         if not store.config.security.dev_auth_by_tg_id_enabled:
-            raise NotFoundException(detail="Not found")
+            raise NotFoundException(
+                detail=store.config.security.dev_auth_by_tg_id_enabled,
+            )
 
         user = await store.users.get_auth_user_by_telegram_user_id(
             telegram_user_id=data.telegram_user_id,
