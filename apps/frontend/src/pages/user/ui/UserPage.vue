@@ -1,7 +1,8 @@
 <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, onMounted } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
 
-  import { authState } from '@shared/auth/session'
+  import { userApi } from '@entities/user/api'
   import { eventApi } from '@entities/event/api'
   import { teamApi } from '@entities/team/api'
 
@@ -12,26 +13,39 @@
   import TeamsCard from '@widgets/TeamsCard/ui/TeamsCard.vue'
   import type { TeamEntry } from '@widgets/TeamsCard/ui/TeamsCard.vue'
 
+  const route = useRoute()
+  const router = useRouter()
+
+  const userId = Number(route.params.id)
+
   type RawActivityEntry = {
     event: ActivityItem['event']
     status: ActivityItem['status']
     teamId: number | null
   }
 
-  const user = computed(() => authState.currentUser.value)
-  const activityFilter = ref<'all' | 'hackathon' | 'win'>('all')
+  const user = ref<Awaited<ReturnType<typeof userApi.getById>> | null>(null)
+  const loading = ref(true)
+  const error = ref<string | null>(null)
 
+  const activityFilter = ref<'all' | 'hackathon' | 'win'>('all')
   const activityItems = ref<ActivityItem[]>([])
   const teams = ref<TeamEntry[]>([])
   const loadingActivity = ref(true)
   const loadingTeams = ref(true)
 
   onMounted(async () => {
-    const userId = user.value?.id
-    if (!userId) return
+    try {
+      user.value = await userApi.getById(userId)
+    } catch {
+      error.value = 'Пользователь не найден'
+      loading.value = false
+      return
+    }
+    loading.value = false
 
     try {
-      // ── Activity ────────────────────────────────────────
+      // ── Activity ──────────────────────────────────────
       const eventsRes = await eventApi.getList({ limit: 50 })
       const events = eventsRes.data
 
@@ -73,14 +87,14 @@
 
       loadingActivity.value = false
 
-      // ── Teams ──────────────────────────────────────────
+      // ── Teams ────────────────────────────────────────
       const teamsRes = await teamApi.getList({ user_id: userId })
       const fullTeams = await Promise.all(
         teamsRes.data.map((t) => teamApi.getById(t.id).catch((): null => null)),
       )
 
       teams.value = fullTeams
-        .filter((t): t is TeamResponse => t !== null)
+        .filter((t): t is NonNullable<typeof t> => t !== null)
         .map((team): TeamEntry => ({
           id: team.id,
           name: team.name,
@@ -97,9 +111,20 @@
 </script>
 
 <template>
-  <div class="profile-page">
-    <!-- Session not yet initialized — show skeleton -->
-    <div v-if="!authState.initialized.value" class="profile-skeleton">
+  <div class="user-page">
+    <!-- Header -->
+    <header class="page-header">
+      <button class="back-btn" @click="router.back()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+      </button>
+      <span class="page-header__title">Участник</span>
+      <div style="width: 36px" />
+    </header>
+
+    <!-- Loading -->
+    <div v-if="loading" class="profile-skeleton">
       <div class="skel skel--avatar" />
       <div class="skel skel--name" />
       <div class="skel skel--roles" />
@@ -110,22 +135,19 @@
       </div>
     </div>
 
-    <template v-else-if="user">
-      <div class="edit-bar">
-        <RouterLink :to="{ name: 'profile-edit' }" class="edit-link">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-          </svg>
-          Редактировать
-        </RouterLink>
-      </div>
+    <!-- Error -->
+    <div v-else-if="error" class="state-empty">
+      <p>{{ error }}</p>
+    </div>
 
+    <!-- Content -->
+    <template v-else-if="user">
       <UserProfileCard :user="user" />
 
       <div class="section">
         <ActivityFeed
           :items="activityItems"
-          :is-loading="false"
+          :is-loading="loadingActivity"
           :active-filter="activityFilter"
           @filter-change="activityFilter = $event"
           @navigate-to-event="(id) => $router.push(`/events/${id}`)"
@@ -139,7 +161,7 @@
       <div class="section">
         <TeamsCard
           :teams="teams"
-          :is-loading="false"
+          :is-loading="loadingTeams"
           @navigate-to-team="(id) => $router.push(`/teams/${id}`)"
         />
       </div>
@@ -148,7 +170,7 @@
 </template>
 
 <style scoped lang="scss">
-  .profile-page {
+  .user-page {
     --p-bg:             #121212;
     --p-surface:        #1c1c1e;
     --p-border:         rgba(255, 255, 255, 0.08);
@@ -163,30 +185,36 @@
     padding-bottom: 40px;
   }
 
-  .edit-bar {
+  .page-header {
     display: flex;
-    justify-content: flex-end;
-    padding: 10px 16px 0;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--p-border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--p-bg);
   }
 
-  .edit-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: 100px;
-    border: 1px solid var(--p-border);
-    color: var(--p-text-secondary);
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: border-color 150ms, color 150ms;
+  .page-header__title {
+    font-size: 16px;
+    font-weight: 700;
+  }
 
-    &:hover {
-      border-color: var(--p-accent);
-      color: var(--p-accent);
-      text-decoration: none;
-    }
+  .back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: none;
+    color: var(--p-text-primary);
+    cursor: pointer;
+    border-radius: 8px;
+
+    &:hover { background: var(--p-surface); }
   }
 
   .section {
@@ -194,7 +222,7 @@
     margin-top: 20px;
   }
 
-  /* ── Skeleton ──────────────────────────────────── */
+  // ── Skeleton ────────────────────────────────────────────
 
   .profile-skeleton {
     display: flex;
@@ -215,31 +243,23 @@
     background-size: 200% 100%;
     animation: shimmer 1.4s infinite;
 
-    &--avatar {
-      width: 88px;
-      height: 88px;
-      border-radius: 50%;
-    }
-
-    &--name {
-      height: 24px;
-      width: 160px;
-    }
-
-    &--roles {
-      height: 16px;
-      width: 200px;
-    }
-
-    &--stat {
-      height: 60px;
-      width: 72px;
-      border-radius: 12px;
-    }
+    &--avatar { width: 88px; height: 88px; border-radius: 50%; }
+    &--name   { height: 24px; width: 160px; }
+    &--roles  { height: 16px; width: 200px; }
+    &--stat   { height: 60px; width: 72px; border-radius: 12px; }
   }
 
   @keyframes shimmer {
-    0% { background-position: 200% 0; }
+    0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  // ── Error / Empty ────────────────────────────────────────
+
+  .state-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--p-text-secondary);
+    font-size: 14px;
   }
 </style>

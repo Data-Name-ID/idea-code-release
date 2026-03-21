@@ -120,6 +120,37 @@ export interface EventRatingResponse {
   ratings: EventRatingEntryResponse[]
 }
 
+// ─── Teams ────────────────────────────────────────────────
+
+export interface TeamShortResponse {
+  id: number
+  name: string
+  description: string
+}
+
+export interface TeamResponse {
+  id: number
+  name: string
+  description: string
+  users: UserShortResponse[]
+  events: EventResponse[]
+}
+
+export interface TeamListResponse {
+  total: number
+  limit: number
+  offset: number
+  data: TeamShortResponse[]
+}
+
+export interface TeamsListParams {
+  limit?: number
+  offset?: number
+  search?: string
+  event_id?: number
+  user_id?: number
+}
+
 // ─── Auth ─────────────────────────────────────────────────
 
 export interface AuthResponse {

@@ -37,6 +37,30 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/users/:id',
+    name: 'user',
+    component: () => import('@pages/user/ui/UserPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/teams/:id',
+    name: 'team',
+    component: () => import('@pages/team/ui/TeamPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/events/:id',
+    name: 'event',
+    component: () => import('@pages/event/ui/EventPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@pages/not-found/ui/NotFoundPage.vue'),

@@ -1,6 +1,13 @@
+import { resolveMock } from '@shared/mocks/handler'
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  if (USE_MOCKS) {
+    return Promise.resolve(resolveMock<T>(path, options))
+  }
+
   const response = await fetch(`${apiBaseUrl}${path}`, {
     credentials: 'include',
     headers: {
