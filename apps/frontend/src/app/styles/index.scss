@@ -1,0 +1,40 @@
+@use '@shared/styles' as *;
+
+:root {
+  color-scheme: light;
+  --color-bg: #{$color-bg};
+  --color-surface: #{$color-surface};
+  --color-border: #{$color-border};
+  --color-text: #{$color-text};
+  --color-link: #{$color-link};
+  font-family: $font-family-base;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: radial-gradient(circle at 100% 0%, #dbeafe, transparent 45%), var(--color-bg);
+  color: var(--color-text);
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

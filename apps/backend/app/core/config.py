@@ -66,6 +66,14 @@ class Config(msgspec.Struct, kw_only=True, frozen=True):
     security: SecurityConfig
 
 
+def _lower_keys(data: object) -> object:
+    if isinstance(data, dict):
+        return {str(key).lower(): _lower_keys(value) for key, value in data.items()}
+    if isinstance(data, list):
+        return [_lower_keys(item) for item in data]
+    return data
+
+
 def create_config() -> Config:
     settings = Dynaconf(
         settings_files=[".secrets.yaml", ".env"],
@@ -73,6 +81,7 @@ def create_config() -> Config:
         load_dotenv=True,
         merge_enabled=True,
     )
-    config_raw = settings.as_dict()
-    config_raw = {k.lower(): v for k, v in config_raw.items()}
+    config_raw = _lower_keys(settings.as_dict())
+    if isinstance(config_raw, dict):
+        config_raw.pop("load_dotenv", None)
     return msgspec.convert(config_raw, type=Config)

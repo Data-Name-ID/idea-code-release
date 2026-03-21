@@ -55,7 +55,7 @@ docker compose up --build
 
 Default ports:
 
-- Frontend prod: `4173`
+- Frontend prod: `5173`
 - Backend: `8000`
 - Postgres: `5432`
 - Redis: `6379`

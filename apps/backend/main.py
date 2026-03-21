@@ -34,7 +34,7 @@ jwt_auth = JWTAuth[UserAuth](
 )
 
 
-@get("/health")
+@get("/health", sync_to_thread=False)
 def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
 
