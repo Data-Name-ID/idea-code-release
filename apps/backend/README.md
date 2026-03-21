@@ -39,11 +39,22 @@ Apply migrations:
 uv run alembic upgrade head
 ```
 
+Apply migrations with mock demo data seed:
+
+```bash
+APP_MIGRATION_ALLOW_MOCK_DATA=true uv run alembic upgrade head
+```
+
 Rollback one migration:
 
 ```bash
 uv run alembic downgrade -1
 ```
+
+Mock data migration notes:
+
+- Mock data is inserted only when `APP_MIGRATION_ALLOW_MOCK_DATA=true`.
+- For downgrade of the mock-data migration, use the same env variable so seeded rows are removed.
 
 ## Quality checks
 
@@ -62,3 +73,8 @@ Preferred configuration source:
 Fallback configuration source:
 
 - `.secrets.yaml` (example in `example.secrets.yaml`)
+
+Telegram-only authentication requires:
+
+- `APP_SECURITY__TELEGRAM__BOT_TOKEN`
+- `APP_SECURITY__TELEGRAM__BOT_USERNAME`

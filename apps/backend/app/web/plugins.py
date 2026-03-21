@@ -18,12 +18,8 @@ class InitPlugin(LitestarInitPlugin):
     def __init__(
         self,
         *,
-        app_name: str,
-        app_version: str,
         store: Store,
     ) -> None:
-        self._app_name = app_name
-        self._app_version = app_version
         self._store = store
 
     def on_app_init(self, app_config: AppConfig) -> AppConfig:
@@ -39,14 +35,23 @@ class InitPlugin(LitestarInitPlugin):
         }
 
     @staticmethod
-    def state_get_store(state: State) -> Store | None:
-        return getattr(state, _APP_STATE_STORE, None)
+    def state_get_store(state: State) -> Store:
+        store = getattr(state, _APP_STATE_STORE, None)
+
+        if store is None:
+            msg = "Store is not initialized"
+            raise RuntimeError(msg)
+
+        return store
 
     @asynccontextmanager
     async def _store_lifespan(self, app: Litestar) -> AsyncGenerator[None, None]:
         setattr(app.state, _APP_STATE_STORE, self._store)
         await self._store.db.connect()
-        yield
+        try:
+            yield
+        finally:
+            await self._store.db.disconnect()
 
     @staticmethod
     def default_logging_config() -> StructLoggingConfig:

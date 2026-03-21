@@ -5,8 +5,10 @@ COPY apps/frontend/package.json apps/frontend/package.json
 RUN yarn install --frozen-lockfile
 
 FROM base AS build
-ARG API_BASE_URL=http://localhost:8000
-ENV API_BASE_URL=${API_BASE_URL}
+ARG VITE_API_BASE_URL=http://localhost:8000
+ARG VITE_TELEGRAM_WIDGET_HOSTNAME=localhost
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_TELEGRAM_WIDGET_HOSTNAME=${VITE_TELEGRAM_WIDGET_HOSTNAME}
 COPY . .
 WORKDIR /repo/apps/frontend
 RUN yarn build

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Literal
 
 import msgspec
 from dynaconf import Dynaconf
@@ -6,9 +7,6 @@ from sqlalchemy.engine.url import URL
 
 
 class StaticConfig:
-    USERNAME_MIN_LENGTH = 3
-    PASSWORD_MIN_LENGTH = 8
-
     SHORT_STR_LENGTH = 20  # Коды, статусы, идентификаторы
     NAME_STR_LENGTH = 100  # Имена, логины, названия, заголовки, теги
     DESCRIPTION_STR_LENGTH = 500  # Краткие описания, аннотации, комментарии
@@ -43,11 +41,35 @@ class DatabaseConfig(msgspec.Struct, kw_only=True, frozen=True):
 
 class JWTConfig(msgspec.Struct, kw_only=True, frozen=True):
     token_secret: str
-    token_expiration_minutes: int = 60 * 24  # 24 hours
+    token_expiration_minutes: int = 15
+    refresh_token_secret: str | None = None
+    refresh_token_expiration_minutes: int = 60 * 24 * 30  # 30 days
 
     @property
     def token_expiration(self) -> timedelta:
         return timedelta(minutes=self.token_expiration_minutes)
+
+    @property
+    def refresh_token_expiration(self) -> timedelta:
+        return timedelta(minutes=self.refresh_token_expiration_minutes)
+
+    @property
+    def effective_refresh_secret(self) -> str:
+        return self.refresh_token_secret or self.token_secret
+
+
+class TelegramConfig(msgspec.Struct, kw_only=True, frozen=True):
+    bot_token: str = ""
+    bot_username: str = ""
+    auth_max_age_seconds: int = 15 * 60
+
+
+class CookieConfig(msgspec.Struct, kw_only=True, frozen=True):
+    key: str = "access_token"
+    path: str = "/"
+    domain: str | None = None
+    secure: bool = False
+    samesite: Literal["lax", "strict", "none"] = "lax"
 
 
 class SecurityConfig(msgspec.Struct, kw_only=True, frozen=True):
@@ -58,7 +80,10 @@ class SecurityConfig(msgspec.Struct, kw_only=True, frozen=True):
             "http://127.0.0.1:5173",
         ],
     )
+    cors_allow_credentials: bool = True
     jwt: JWTConfig
+    telegram: TelegramConfig = msgspec.field(default_factory=TelegramConfig)
+    cookie: CookieConfig = msgspec.field(default_factory=CookieConfig)
 
 
 class Config(msgspec.Struct, kw_only=True, frozen=True):

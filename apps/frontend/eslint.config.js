@@ -3,6 +3,7 @@ import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
 import vueParser from 'vue-eslint-parser'
 import prettier from 'eslint-config-prettier'
+import globals from 'globals'
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -15,6 +16,7 @@ export default tseslint.config(
         parser: tseslint.parser,
         sourceType: 'module',
       },
+      globals: globals.browser,
     },
     plugins: { vue: pluginVue },
     rules: {
@@ -23,6 +25,9 @@ export default tseslint.config(
     },
   },
   {
+    languageOptions: {
+      globals: globals.browser,
+    },
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',

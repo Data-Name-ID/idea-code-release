@@ -9,6 +9,10 @@ node_modules/
 !.yarn/sdks
 !.yarn/versions
 
+# IDEA
+.vscode
+.idea
+
 # Python
 __pycache__/
 *.py[cod]

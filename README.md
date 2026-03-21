@@ -50,8 +50,15 @@ yarn dev:backend
 Single production-style compose:
 
 ```bash
+cp .env.example .env
 docker compose up --build
 ```
+
+For Telegram Login Widget on local development:
+
+- keep `VITE_TELEGRAM_WIDGET_HOSTNAME=localhost`
+- open frontend as `http://localhost:5173` (not `127.0.0.1`)
+- set BotFather `/setdomain` to `localhost` (without protocol and port)
 
 Default ports:
 
@@ -78,3 +85,4 @@ Backend:
 - primary source: environment variables with `APP_` prefix
 - example: `apps/backend/.env.example`
 - optional fallback file: `apps/backend/.secrets.yaml`
+- Telegram auth requires `APP_SECURITY__TELEGRAM__BOT_TOKEN` and `APP_SECURITY__TELEGRAM__BOT_USERNAME`

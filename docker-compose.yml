@@ -1,27 +1,35 @@
 name: idea-code-release
 
 x-backend-env: &backend-env
-  APP_DB__USER: postgres
-  APP_DB__PASSWORD: postgres
-  APP_DB__HOST: db
-  APP_DB__PORT: "5432"
-  APP_DB__NAME: postgres
-  APP_DB__ECHO: "false"
-  APP_DB__ECHO_POOL: "false"
-  APP_DB__POOL_SIZE: "20"
-  APP_DB__MAX_OVERFLOW: "10"
-  APP_SECURITY__JWT__TOKEN_SECRET: CHANGE_THIS_JWT_SECRET
-  APP_SECURITY__JWT__TOKEN_EXPIRATION_MINUTES: "60"
-  APP_SECURITY__CORS_ALLOWED_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
+  APP_DB__USER: ${APP_DB__USER:-postgres}
+  APP_DB__PASSWORD: ${APP_DB__PASSWORD:-postgres}
+  APP_DB__HOST: ${APP_DB__HOST:-db}
+  APP_DB__PORT: "${APP_DB__PORT:-5432}"
+  APP_DB__NAME: ${APP_DB__NAME:-postgres}
+  APP_DB__ECHO: "${APP_DB__ECHO:-false}"
+  APP_DB__ECHO_POOL: "${APP_DB__ECHO_POOL:-false}"
+  APP_DB__POOL_SIZE: "${APP_DB__POOL_SIZE:-20}"
+  APP_DB__MAX_OVERFLOW: "${APP_DB__MAX_OVERFLOW:-10}"
+  APP_SECURITY__JWT__TOKEN_SECRET: ${APP_SECURITY__JWT__TOKEN_SECRET:-CHANGE_THIS_JWT_SECRET}
+  APP_SECURITY__JWT__TOKEN_EXPIRATION_MINUTES: "${APP_SECURITY__JWT__TOKEN_EXPIRATION_MINUTES:-60}"
+  APP_SECURITY__CORS_ALLOWED_ORIGINS: '${APP_SECURITY__CORS_ALLOWED_ORIGINS:-["http://localhost:5173","http://127.0.0.1:5173"]}'
+  APP_SECURITY__CORS_ALLOW_CREDENTIALS: "${APP_SECURITY__CORS_ALLOW_CREDENTIALS:-true}"
+  APP_SECURITY__COOKIE__KEY: ${APP_SECURITY__COOKIE__KEY:-access_token}
+  APP_SECURITY__COOKIE__PATH: ${APP_SECURITY__COOKIE__PATH:-/}
+  APP_SECURITY__COOKIE__SECURE: "${APP_SECURITY__COOKIE__SECURE:-false}"
+  APP_SECURITY__COOKIE__SAMESITE: ${APP_SECURITY__COOKIE__SAMESITE:-lax}
+  APP_SECURITY__TELEGRAM__BOT_TOKEN: ${APP_SECURITY__TELEGRAM__BOT_TOKEN:-}
+  APP_SECURITY__TELEGRAM__BOT_USERNAME: ${APP_SECURITY__TELEGRAM__BOT_USERNAME:-}
+  APP_SECURITY__TELEGRAM__AUTH_MAX_AGE_SECONDS: "${APP_SECURITY__TELEGRAM__AUTH_MAX_AGE_SECONDS:-900}"
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -73,7 +81,8 @@ services:
       dockerfile: apps/frontend/Dockerfile
       target: prod
       args:
-        API_BASE_URL: ${API_BASE_URL}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_TELEGRAM_WIDGET_HOSTNAME: ${VITE_TELEGRAM_WIDGET_HOSTNAME:-localhost}
     depends_on:
       backend:
         condition: service_started

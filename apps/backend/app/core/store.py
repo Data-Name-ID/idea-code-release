@@ -5,12 +5,16 @@ class Store:
     def __init__(self, *, config: Config) -> None:
         self.config = config
 
-        # core
         from app.core.db import DatabaseAccessor
 
         self.db = DatabaseAccessor(self)
 
-        # accessors
+        from app.events.accessor import EventAccessor
+        from app.roles.accessor import RoleAccessor
+        from app.skills.accessor import SkillAccessor
         from app.users.accessor import UserAccessor
 
         self.users = UserAccessor(self)
+        self.roles = RoleAccessor(self)
+        self.skills = SkillAccessor(self)
+        self.events = EventAccessor(self)
