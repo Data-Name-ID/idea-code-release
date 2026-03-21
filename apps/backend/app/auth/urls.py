@@ -2,8 +2,8 @@ from collections.abc import Sequence
 
 from litestar.types import ControllerRouterHandler
 
-from app.users.views import UserController
+from app.auth.views import AuthController
 
 
 def get_handlers() -> Sequence[ControllerRouterHandler]:
-    return (UserController,)
+    return (AuthController,)

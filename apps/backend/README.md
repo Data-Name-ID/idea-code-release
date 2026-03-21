@@ -62,3 +62,8 @@ Preferred configuration source:
 Fallback configuration source:
 
 - `.secrets.yaml` (example in `example.secrets.yaml`)
+
+Telegram-only authentication requires:
+
+- `APP_SECURITY__TELEGRAM__BOT_TOKEN`
+- `APP_SECURITY__TELEGRAM__BOT_USERNAME`

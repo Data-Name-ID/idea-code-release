@@ -1,0 +1,37 @@
+from msgspec import Struct
+
+from app.users.domain import AuthUser
+
+
+class TelegramLoginRequest(Struct, kw_only=True):
+    id: int
+    first_name: str
+    last_name: str | None = None
+    username: str | None = None
+    photo_url: str | None = None
+    auth_date: int
+    hash: str
+
+
+class TelegramConfigData(Struct, kw_only=True):
+    bot_username: str
+
+
+class AuthUserData(Struct, kw_only=True):
+    id: int
+    telegram_user_id: int
+    username: str | None
+    first_name: str
+    last_name: str | None
+    photo_url: str | None
+
+    @classmethod
+    def from_domain(cls, user: AuthUser) -> "AuthUserData":
+        return cls(
+            id=user.id,
+            telegram_user_id=user.telegram_user_id,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            photo_url=user.photo_url,
+        )

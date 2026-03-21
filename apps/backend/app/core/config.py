@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Literal
 
 import msgspec
 from dynaconf import Dynaconf
@@ -50,6 +51,20 @@ class JWTConfig(msgspec.Struct, kw_only=True, frozen=True):
         return timedelta(minutes=self.token_expiration_minutes)
 
 
+class TelegramConfig(msgspec.Struct, kw_only=True, frozen=True):
+    bot_token: str = ""
+    bot_username: str = ""
+    auth_max_age_seconds: int = 15 * 60
+
+
+class CookieConfig(msgspec.Struct, kw_only=True, frozen=True):
+    key: str = "access_token"
+    path: str = "/"
+    domain: str | None = None
+    secure: bool = False
+    samesite: Literal["lax", "strict", "none"] = "lax"
+
+
 class SecurityConfig(msgspec.Struct, kw_only=True, frozen=True):
     cors_allowed_origins: list[str] = msgspec.field(
         default_factory=lambda: [
@@ -58,7 +73,10 @@ class SecurityConfig(msgspec.Struct, kw_only=True, frozen=True):
             "http://127.0.0.1:5173",
         ],
     )
+    cors_allow_credentials: bool = True
     jwt: JWTConfig
+    telegram: TelegramConfig = msgspec.field(default_factory=TelegramConfig)
+    cookie: CookieConfig = msgspec.field(default_factory=CookieConfig)
 
 
 class Config(msgspec.Struct, kw_only=True, frozen=True):

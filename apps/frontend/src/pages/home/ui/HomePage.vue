@@ -1,10 +1,26 @@
 <script setup lang="ts">
-  const apiBaseUrl = import.meta.env.API_BASE_URL ?? 'http://localhost:8000'
+  import { computed } from 'vue'
+
+  import { authState } from '@shared/auth/session'
+
+  const apiBaseUrl =
+    import.meta.env.VITE_API_BASE_URL ??
+    import.meta.env.VITE_API_BASE_URL ??
+    'http://localhost:8000'
+  const currentUser = computed(() => authState.currentUser.value)
 </script>
 
 <template>
   <section class="home">
-    <h2>Frontend Bootstrapped</h2>
+    <h2>Authenticated Session</h2>
+    <p v-if="currentUser">
+      Telegram ID:
+      <code>{{ currentUser.telegram_user_id }}</code>
+    </p>
+    <p v-if="currentUser">
+      Account:
+      <code>{{ currentUser.username ? '@' + currentUser.username : currentUser.first_name }}</code>
+    </p>
     <p>
       API base URL:
       <code>{{ apiBaseUrl }}</code>
