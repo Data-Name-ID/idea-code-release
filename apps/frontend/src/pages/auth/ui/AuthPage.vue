@@ -86,7 +86,7 @@
         auth_date: Number(user.auth_date),
       })
       setCurrentUser(authUser)
-      await router.replace({ name: 'home' })
+      await router.replace({ name: 'profile' })
     } catch {
       error.value = 'Telegram login failed. Please try again.'
     } finally {

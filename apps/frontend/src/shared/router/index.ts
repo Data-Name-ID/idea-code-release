@@ -21,6 +21,14 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@pages/profile/ui/ProfilePage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@pages/not-found/ui/NotFoundPage.vue'),
@@ -47,7 +55,7 @@ router.beforeEach(async (to) => {
   }
 
   if (guestOnly && isAuthenticated) {
-    return { name: 'home' }
+    return { name: 'profile' }
   }
 
   return true
