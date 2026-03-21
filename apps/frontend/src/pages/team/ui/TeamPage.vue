@@ -4,8 +4,9 @@
 
   import { teamApi } from '@entities/team/api'
   import { eventApi } from '@entities/event/api'
-  import type { EventRatingStatus } from '@shared/types/api'
   import { formatDateLong, initials, ratingStatusLabel } from '@shared/lib/format'
+  import type { EventRatingStatus } from '@shared/types/api'
+  import type { EventResult } from '../model/types'
 
   const route = useRoute()
   const router = useRouter()
@@ -14,16 +15,6 @@
   const team = ref<Awaited<ReturnType<typeof teamApi.getById>> | null>(null)
   const isLoading = ref(true)
   const error = ref<string | null>(null)
-
-  interface EventResult {
-    id: number
-    title: string
-    date: string
-    cover: string | null
-    isVerified: boolean
-    status: EventRatingStatus | null
-  }
-
   const eventResults = ref<EventResult[]>([])
   const members = computed(() => team.value?.users ?? [])
   const winCount = computed(
