@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monorepo Task Router"
+  short_description: "Route monorepo tasks by ownership boundaries."
+  default_prompt: "Route this task to the correct ownership area, define scope boundaries, and produce a handoff checklist."

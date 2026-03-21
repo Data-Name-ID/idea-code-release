@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Litestar Feature Flow"
+  short_description: "Build backend APIs with migration safety checks."
+  default_prompt: "Implement backend changes in apps/backend with migration safety notes, contract summary, and verification commands."

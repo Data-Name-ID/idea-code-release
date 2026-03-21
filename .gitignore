@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+
+# Node / Yarn
+node_modules/
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+.secrets.yaml
+.secrets.*
+
+# Build artifacts
+apps/frontend/dist/
+apps/frontend/.vite/
+*.tsbuildinfo
+coverage/
+
+# Local compose volumes / overrides
+*.local.yml
