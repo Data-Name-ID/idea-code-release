@@ -100,15 +100,15 @@ def _seed_telegram_identities() -> None:
                 SELECT
                     users.id,
                     :tg_id,
-                    :username,
-                    :name,
+                    CAST(:username AS VARCHAR(100)),
+                    CAST(:name AS VARCHAR(100)),
                     NULL,
                     NULL,
                     timezone('utc', now()),
                     timezone('utc', now()),
                     timezone('utc', now())
                 FROM users
-                WHERE users.username = :username
+                WHERE users.username = CAST(:username AS VARCHAR(100))
                 ON CONFLICT (telegram_user_id) DO UPDATE
                 SET
                     user_id = excluded.user_id,
