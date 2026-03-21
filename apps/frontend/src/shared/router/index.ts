@@ -21,6 +21,14 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@pages/profile/ui/ProfilePage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@pages/not-found/ui/NotFoundPage.vue'),
@@ -36,6 +44,9 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  // TODO: re-enable auth guards when backend is ready
+  return true
+
   await ensureSessionInitialized()
 
   const isAuthenticated = authState.isAuthenticated.value
