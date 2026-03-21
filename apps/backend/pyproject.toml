@@ -7,9 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.17.1",
     "asyncpg>=0.30.0",
-    "bcrypt>=5.0.0",
     "dynaconf>=3.2.12",
-    "email-validator>=2.3.0",
     "greenlet>=3.2.4",
     "litestar[jwt]>=2.18.0",
     "sqlalchemy[asyncio]>=2.0.44",

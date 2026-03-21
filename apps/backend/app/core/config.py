@@ -7,9 +7,6 @@ from sqlalchemy.engine.url import URL
 
 
 class StaticConfig:
-    USERNAME_MIN_LENGTH = 3
-    PASSWORD_MIN_LENGTH = 8
-
     SHORT_STR_LENGTH = 20  # Коды, статусы, идентификаторы
     NAME_STR_LENGTH = 100  # Имена, логины, названия, заголовки, теги
     DESCRIPTION_STR_LENGTH = 500  # Краткие описания, аннотации, комментарии

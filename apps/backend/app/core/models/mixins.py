@@ -1,12 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Integer
+from sqlalchemy import DateTime, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql.functions import func
-
-
-class BigIDMixin:
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
 
 class IDMixin:
