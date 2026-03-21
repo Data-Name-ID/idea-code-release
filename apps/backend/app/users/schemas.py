@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 from msgspec import Struct
 
-from app.core import validators
 from app.roles.schemas import RoleResponse
 from app.skills.schemas import SkillResponse
 
@@ -43,13 +42,6 @@ def detect_link_type(url: str) -> LinkType:
     if host not in _DOMAIN_TO_LINK_TYPE:
         host = host.lower().removeprefix("www.")
     return _DOMAIN_TO_LINK_TYPE.get(host, LinkType.OTHER)
-
-
-class UserEmailRequest(Struct, kw_only=True):
-    email: str
-
-    def __post_init__(self) -> None:
-        self.email = validators.validate_and_normalize_email(self.email)
 
 
 class LinkRequest(Struct, kw_only=True):

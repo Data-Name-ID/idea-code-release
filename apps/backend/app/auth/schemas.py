@@ -4,13 +4,8 @@ from typing import TYPE_CHECKING, Self
 
 from msgspec import Struct
 
-from app.core import validators
-from app.users.schemas import UserResponse
-
 if TYPE_CHECKING:
-    from app.core.config import JWTConfig
     from app.users.domain import AuthUser
-    from app.users.models import UserModel
 
 
 # ── Telegram ──
@@ -49,53 +44,8 @@ class AuthUserData(Struct, kw_only=True):
         )
 
 
-# ── Email/password ──
-
-class RegisterRequest(Struct, kw_only=True):
-    username: str
-    email: str
-    password: str
-    name: str
-
-    def __post_init__(self) -> None:
-        self.email = validators.validate_and_normalize_email(self.email)
-        validators.validate_password(self.password)
-
-
-class LoginRequest(Struct, kw_only=True):
-    email: str
-    password: str
-
-    def __post_init__(self) -> None:
-        self.email = validators.validate_and_normalize_email(self.email)
-
-
 class RefreshRequest(Struct, kw_only=True):
     refresh_token: str
-
-
-class AuthResponse(Struct, kw_only=True):
-    access_token: str
-    refresh_token: str
-    token_type: str = "Bearer"  # noqa: S105
-    expires_in: int
-    user: UserResponse
-
-    @classmethod
-    def from_tokens_and_model(
-        cls,
-        *,
-        access_token: str,
-        refresh_token: str,
-        jwt_config: JWTConfig,
-        user: UserModel,
-    ) -> Self:
-        return cls(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires_in=int(jwt_config.token_expiration.total_seconds()),
-            user=UserResponse.from_model(user),
-        )
 
 
 class RefreshResponse(Struct, kw_only=True):

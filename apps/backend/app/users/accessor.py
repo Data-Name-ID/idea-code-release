@@ -114,15 +114,6 @@ class UserAccessor(BaseAccessor):
             ),
         )
 
-    # ── Email/password auth ──
-
-    async def get_user_by_email(self, email: str) -> UserModel | None:
-        return await self.store.db.scalar(
-            select(UserModel)
-            .options(selectinload(UserModel.roles), selectinload(UserModel.skills))
-            .where(UserModel.email == email),
-        )
-
     # ── Profile CRUD ──
 
     @with_single_session
@@ -181,7 +172,6 @@ class UserAccessor(BaseAccessor):
         username: str,
         name: str,
         email: str | None = None,
-        password_hash: str | None = None,
         avatar: str | None = None,
         description: str = "",
         location: str = "",
@@ -194,7 +184,6 @@ class UserAccessor(BaseAccessor):
             username=username,
             name=name,
             email=email,
-            password_hash=password_hash,
             avatar=avatar,
             description=description,
             location=location,

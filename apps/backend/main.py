@@ -42,8 +42,6 @@ jwt_auth = JWTCookieAuth[UserAuth](
         "/health",
         "/api/auth/telegram/config",
         "/api/auth/telegram/login",
-        "/api/auth/register",
-        "/api/auth/login",
         "/api/auth/refresh",
     ],
     key=config.security.cookie.key,

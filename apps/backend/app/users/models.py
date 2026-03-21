@@ -45,12 +45,6 @@ class UserModel(IDMixin, CreatedAtMixin, UpdatedAtMixin, BaseModel):
         default=None,
     )
 
-    password_hash: Mapped[str | None] = mapped_column(
-        String(StaticConfig.CREDENTIALS_STR_LENGTH),
-        nullable=True,
-        default=None,
-    )
-
     name: Mapped[str] = mapped_column(
         String(StaticConfig.NAME_STR_LENGTH),
         default="",

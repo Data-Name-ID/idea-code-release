@@ -3,20 +3,15 @@ from typing import Any, cast
 from litestar import Controller, Request, Response, get, post, status_codes
 from litestar.datastructures import Cookie
 from litestar.exceptions import (
-    ClientException,
     NotAuthorizedException,
     NotFoundException,
 )
 from litestar.security.jwt import JWTCookieAuth, Token
 
-from app.auth.password import hash_password, verify_password
 from app.auth.schemas import (
-    AuthResponse,
     AuthUserData,
-    LoginRequest,
     RefreshRequest,
     RefreshResponse,
-    RegisterRequest,
     TelegramConfigData,
     TelegramLoginRequest,
 )
@@ -84,91 +79,6 @@ class AuthController(Controller):
             identifier=str(user.id),
             response_status_code=status_codes.HTTP_200_OK,
             response_body=OkResponse(data=AuthUserData.from_domain(user)),
-        )
-
-    # ── Email/password ──
-
-    @post(
-        path="/register",
-        status_code=status_codes.HTTP_201_CREATED,
-        exclude_from_auth=True,
-    )
-    async def register(
-        self,
-        store: Store,
-        request: Request,
-        data: RegisterRequest,
-    ) -> AuthResponse:
-        existing = await store.users.get_user_by_email(data.email)
-        if existing is not None:
-            raise ClientException(
-                status_code=409,
-                detail="Email already registered",
-            )
-
-        user = await store.users.create_user(
-            username=data.username,
-            name=data.name,
-            email=data.email,
-            password_hash=hash_password(data.password),
-        )
-
-        jwt_auth = cast("JWTCookieAuth[Any]", request.app.state["jwt_auth"])
-        config = store.config.security.jwt
-
-        access_token = jwt_auth.create_token(
-            identifier=str(user.id),
-            token_extras={"type": "access"},
-        )
-        refresh_token = jwt_auth.create_token(
-            identifier=str(user.id),
-            token_expiration=config.refresh_token_expiration,
-            token_extras={"type": "refresh"},
-        )
-
-        return AuthResponse.from_tokens_and_model(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            jwt_config=config,
-            user=user,
-        )
-
-    @post(path="/login", exclude_from_auth=True)
-    async def login(
-        self,
-        store: Store,
-        request: Request,
-        data: LoginRequest,
-    ) -> AuthResponse:
-        user = await store.users.get_user_by_email(data.email)
-        if user is None or user.password_hash is None:
-            raise NotAuthorizedException(
-                detail="Invalid email or password",
-            )
-
-        if not verify_password(data.password, user.password_hash):
-            raise NotAuthorizedException(
-                detail="Invalid email or password",
-            )
-
-        jwt_auth = cast("JWTCookieAuth[Any]", request.app.state["jwt_auth"])
-        config = store.config.security.jwt
-
-        access_token = jwt_auth.create_token(
-            identifier=str(user.id),
-            token_extras={"type": "access"},
-        )
-        refresh_token = jwt_auth.create_token(
-            identifier=str(user.id),
-            token_expiration=config.refresh_token_expiration,
-            token_extras={"type": "refresh"},
-        )
-
-        return AuthResponse.from_tokens_and_model(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            jwt_config=config,
-            user=user,
         )
 
     @post(path="/refresh", exclude_from_auth=True)
