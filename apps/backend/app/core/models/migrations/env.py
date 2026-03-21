@@ -6,6 +6,9 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import app.events.models  # noqa: F401
+import app.roles.models  # noqa: F401
+import app.skills.models  # noqa: F401
 import app.users.models  # noqa: F401
 from app.core.config import create_config
 from app.core.db import BaseModel

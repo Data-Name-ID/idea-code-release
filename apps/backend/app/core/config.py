@@ -44,11 +44,21 @@ class DatabaseConfig(msgspec.Struct, kw_only=True, frozen=True):
 
 class JWTConfig(msgspec.Struct, kw_only=True, frozen=True):
     token_secret: str
-    token_expiration_minutes: int = 60 * 24  # 24 hours
+    token_expiration_minutes: int = 15
+    refresh_token_secret: str | None = None
+    refresh_token_expiration_minutes: int = 60 * 24 * 30  # 30 days
 
     @property
     def token_expiration(self) -> timedelta:
         return timedelta(minutes=self.token_expiration_minutes)
+
+    @property
+    def refresh_token_expiration(self) -> timedelta:
+        return timedelta(minutes=self.refresh_token_expiration_minutes)
+
+    @property
+    def effective_refresh_secret(self) -> str:
+        return self.refresh_token_secret or self.token_secret
 
 
 class TelegramConfig(msgspec.Struct, kw_only=True, frozen=True):

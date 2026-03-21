@@ -10,6 +10,10 @@ from litestar.openapi.spec.license import License
 from litestar.security.jwt import JWTCookieAuth, Token
 
 import app.auth.urls as auth_urls
+import app.events.urls as events_urls
+import app.roles.urls as roles_urls
+import app.skills.urls as skills_urls
+import app.users.urls as users_urls
 from app.core.config import create_config
 from app.core.store import Store
 from app.users.domain import UserAuth
@@ -22,7 +26,9 @@ store = Store(config=config)
 def retrieve_user_handler(
     token: Token,
     _: ASGIConnection[Any, Any, Any, Any],
-) -> UserAuth:
+) -> UserAuth | None:
+    if token.extras.get("type") == "refresh":
+        return None
     return UserAuth(id=int(token.sub))
 
 
@@ -36,6 +42,9 @@ jwt_auth = JWTCookieAuth[UserAuth](
         "/health",
         "/api/auth/telegram/config",
         "/api/auth/telegram/login",
+        "/api/auth/register",
+        "/api/auth/login",
+        "/api/auth/refresh",
     ],
     key=config.security.cookie.key,
     path=config.security.cookie.path,
@@ -51,7 +60,14 @@ def healthcheck() -> dict[str, str]:
 
 
 app = Litestar(
-    route_handlers=(healthcheck, *auth_urls.get_handlers()),
+    route_handlers=(
+        healthcheck,
+        *auth_urls.get_handlers(),
+        *users_urls.get_handlers(),
+        *roles_urls.get_handlers(),
+        *skills_urls.get_handlers(),
+        *events_urls.get_handlers(),
+    ),
     on_app_init=[
         jwt_auth.on_app_init,
     ],
