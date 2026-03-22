@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from django.urls import reverse_lazy
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -120,12 +122,14 @@ UNFOLD = {
                     {
                         "title": "Заявки на участие",
                         "icon": "assignment",
-                        "link": "admin:backoffice_participationapplication_changelist",
+                        "link": reverse_lazy(
+                            "admin:backoffice_participationapplication_changelist",
+                        ),
                     },
                     {
                         "title": "События",
                         "icon": "event",
-                        "link": "admin:backoffice_event_changelist",
+                        "link": reverse_lazy("admin:backoffice_event_changelist"),
                     },
                 ],
             },
@@ -136,12 +140,12 @@ UNFOLD = {
                     {
                         "title": "Роли",
                         "icon": "badge",
-                        "link": "admin:backoffice_role_changelist",
+                        "link": reverse_lazy("admin:backoffice_role_changelist"),
                     },
                     {
                         "title": "Навыки",
                         "icon": "psychology",
-                        "link": "admin:backoffice_skill_changelist",
+                        "link": reverse_lazy("admin:backoffice_skill_changelist"),
                     },
                 ],
             },
@@ -152,7 +156,7 @@ UNFOLD = {
                     {
                         "title": "API-токены организаторов",
                         "icon": "key",
-                        "link": "admin:backoffice_organizerapitoken_changelist",
+                        "link": reverse_lazy("admin:backoffice_organizerapitoken_changelist"),
                     },
                 ],
             },
@@ -163,22 +167,22 @@ UNFOLD = {
                     {
                         "title": "Пользователи",
                         "icon": "group",
-                        "link": "admin:backoffice_user_changelist",
+                        "link": reverse_lazy("admin:backoffice_user_changelist"),
                     },
                     {
                         "title": "Команды",
                         "icon": "groups",
-                        "link": "admin:backoffice_team_changelist",
+                        "link": reverse_lazy("admin:backoffice_team_changelist"),
                     },
                     {
                         "title": "Рейтинги событий",
                         "icon": "workspace_premium",
-                        "link": "admin:backoffice_admineventrating_changelist",
+                        "link": reverse_lazy("admin:backoffice_admineventrating_changelist"),
                     },
                     {
                         "title": "Telegram-аккаунты",
                         "icon": "send",
-                        "link": "admin:backoffice_telegramidentity_changelist",
+                        "link": reverse_lazy("admin:backoffice_telegramidentity_changelist"),
                     },
                 ],
             },
