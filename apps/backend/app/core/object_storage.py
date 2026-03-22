@@ -2,6 +2,7 @@ import asyncio
 import io
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from litestar.datastructures import UploadFile
@@ -55,10 +56,7 @@ class ObjectStorageService:
             content_type=content_type,
         )
 
-        return (
-            f"{self._config.public_base_url.rstrip('/')}/"
-            f"{self._config.bucket}/{object_name}"
-        )
+        return self._build_public_url(object_name=object_name)
 
     async def _ensure_bucket(self) -> None:
         if self._bucket_ready:
@@ -87,3 +85,20 @@ class ObjectStorageService:
         )
 
         self._bucket_ready = True
+
+    def _build_public_url(self, *, object_name: str) -> str:
+        base_url = self._config.public_base_url.rstrip("/")
+        bucket = self._config.bucket
+
+        parsed = urlparse(base_url)
+        host = parsed.netloc.lower()
+        path = parsed.path.rstrip("/")
+        bucket_marker = f"/{bucket}".lower()
+
+        bucket_in_host = host.startswith(f"{bucket.lower()}.")
+        bucket_in_path = path.lower() == bucket_marker or path.lower().endswith(
+            bucket_marker,
+        )
+        if bucket_in_host or bucket_in_path:
+            return f"{base_url}/{object_name}"
+        return f"{base_url}/{bucket}/{object_name}"

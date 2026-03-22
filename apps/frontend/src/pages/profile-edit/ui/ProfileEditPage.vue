@@ -109,7 +109,21 @@
   }
 
   function scrollToSection(sectionId: string): void {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const target = document.getElementById(sectionId)
+    if (!target) return
+
+    const pageHeader = document.querySelector<HTMLElement>('.page-header')
+    const sectionNav = document.querySelector<HTMLElement>('.section-nav')
+    const stickyOffset =
+      (pageHeader?.getBoundingClientRect().height ?? 0) +
+      (sectionNav?.getBoundingClientRect().height ?? 0) +
+      12
+
+    const targetTop = target.getBoundingClientRect().top + window.scrollY
+    window.scrollTo({
+      top: Math.max(targetTop - stickyOffset, 0),
+      behavior: 'smooth',
+    })
   }
 
   async function handleAvatarSelected(event: Event): Promise<void> {
@@ -572,6 +586,7 @@
   }
 
   .section {
+    scroll-margin-top: 132px;
     padding: 20px 16px;
     @include flex-column(12px);
     border-bottom: 1px solid $color-border;
