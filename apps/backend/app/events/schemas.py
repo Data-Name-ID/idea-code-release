@@ -55,6 +55,7 @@ class EventUpdateRequest(Struct, kw_only=True):
 class EventRatingEntryResponse(Struct, kw_only=True):
     user_id: int
     status: EventRatingStatus
+    place: int | None = None
     team_id: int | None = None
     awarded_at: datetime | None = None
 
@@ -63,6 +64,7 @@ class EventRatingEntryResponse(Struct, kw_only=True):
         return cls(
             user_id=model.user_id,
             status=EventRatingStatus(model.status),
+            place=model.place,
             team_id=model.team_id,
             awarded_at=model.awarded_at,
         )
@@ -76,4 +78,5 @@ class EventRatingResponse(Struct, kw_only=True):
 class EventRatingCreateRequest(Struct, kw_only=True):
     user_id: int
     status: EventRatingStatus
+    place: int | None = None
     team_id: int | None = None

@@ -12,6 +12,13 @@ from app.core.models.mixins import CreatedAtMixin, IDMixin, UpdatedAtMixin
 class EventModel(IDMixin, CreatedAtMixin, UpdatedAtMixin, BaseModel):
     __tablename__ = "events"
 
+    external_id: Mapped[str | None] = mapped_column(
+        String(StaticConfig.NAME_STR_LENGTH),
+        unique=True,
+        nullable=True,
+        default=None,
+    )
+
     title: Mapped[str] = mapped_column(String(StaticConfig.NAME_STR_LENGTH))
 
     description: Mapped[str] = mapped_column(
@@ -43,6 +50,7 @@ class EventRatingModel(BaseModel):
             "status IN ('winner', 'prize_winner', 'participant')",
             name="status_allowed",
         ),
+        CheckConstraint("place IS NULL OR place > 0", name="place_positive"),
     )
 
     event_id: Mapped[int] = mapped_column(
@@ -58,6 +66,8 @@ class EventRatingModel(BaseModel):
     status: Mapped[str] = mapped_column(
         String(StaticConfig.SHORT_STR_LENGTH),
     )
+
+    place: Mapped[int | None] = mapped_column(nullable=True, default=None)
 
     team_id: Mapped[int | None] = mapped_column(
         ForeignKey("teams.id", ondelete="SET NULL"),

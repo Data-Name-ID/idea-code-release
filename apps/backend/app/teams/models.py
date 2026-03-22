@@ -23,6 +23,13 @@ team_users = Table(
 class TeamModel(IDMixin, CreatedAtMixin, UpdatedAtMixin, BaseModel):
     __tablename__ = "teams"
 
+    external_id: Mapped[str | None] = mapped_column(
+        String(StaticConfig.NAME_STR_LENGTH),
+        unique=True,
+        nullable=True,
+        default=None,
+    )
+
     name: Mapped[str] = mapped_column(
         String(StaticConfig.NAME_STR_LENGTH),
         unique=True,

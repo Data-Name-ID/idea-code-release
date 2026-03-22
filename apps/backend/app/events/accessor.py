@@ -118,6 +118,7 @@ class EventAccessor(BaseAccessor):
         event_id: int,
         user_id: int,
         status: str,
+        place: int | None = None,
         team_id: int | None = None,
     ) -> EventRatingModel | None:
         awarded_at = datetime.now(UTC)
@@ -126,6 +127,7 @@ class EventAccessor(BaseAccessor):
                 EventRatingModel.event_id.key,
                 EventRatingModel.user_id.key,
                 EventRatingModel.status.key,
+                EventRatingModel.place.key,
                 EventRatingModel.team_id.key,
                 EventRatingModel.awarded_at.key,
             ],
@@ -133,6 +135,7 @@ class EventAccessor(BaseAccessor):
                 EventModel.id,
                 literal(user_id),
                 literal(status),
+                literal(place, type_=Integer),
                 literal(team_id, type_=Integer),
                 literal(awarded_at),
             ).where(EventModel.id == event_id),
@@ -146,6 +149,7 @@ class EventAccessor(BaseAccessor):
                 ],
                 set_={
                     EventRatingModel.status.key: insert_stmt.excluded.status,
+                    EventRatingModel.place.key: insert_stmt.excluded.place,
                     EventRatingModel.team_id.key: insert_stmt.excluded.team_id,
                     EventRatingModel.awarded_at.key: insert_stmt.excluded.awarded_at,
                 },

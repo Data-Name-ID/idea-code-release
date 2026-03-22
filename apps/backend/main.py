@@ -11,6 +11,7 @@ from litestar.security.jwt import JWTCookieAuth, Token
 
 import app.auth.urls as auth_urls
 import app.events.urls as events_urls
+import app.ingest.urls as ingest_urls
 import app.roles.urls as roles_urls
 import app.skills.urls as skills_urls
 import app.teams.urls as teams_urls
@@ -45,6 +46,7 @@ jwt_auth = JWTCookieAuth[UserAuth](
         "/api/auth/telegram/config",
         "/api/auth/telegram/login",
         "/api/auth/refresh",
+        "/api/public/organizer/import",
     ],
     key=config.security.cookie.key,
     path=config.security.cookie.path,
@@ -68,6 +70,7 @@ app = Litestar(
         *skills_urls.get_handlers(),
         *teams_urls.get_handlers(),
         *events_urls.get_handlers(),
+        *ingest_urls.get_handlers(),
     ),
     on_app_init=[
         jwt_auth.on_app_init,
