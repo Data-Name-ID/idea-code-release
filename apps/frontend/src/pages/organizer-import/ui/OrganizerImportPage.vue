@@ -158,8 +158,13 @@
     result.team_external_id = ''
   }
 
+  function isTeamTarget(result: OrganizerResultInput): boolean {
+    return result.user == null
+  }
+
   function setTeamTarget(result: OrganizerResultInput): void {
     result.user = null
+    if (!result.team_external_id) result.team_external_id = ''
   }
 
   function emptyMember(): OrganizerMemberInput {
@@ -357,18 +362,32 @@
             </div>
 
             <div class="target-block">
-              <div class="target-switch">
-                <label class="radio"><input type="radio" :checked="(result.team_external_id ?? '').trim() !== ''" @change="setTeamTarget(result)"> Команда</label>
-                <label class="radio"><input type="radio" :checked="result.user != null" @change="ensureResultUser(result)"> Персонально</label>
+              <div class="target-switch" role="tablist" aria-label="Тип результата">
+                <button
+                  type="button"
+                  class="target-switch__option"
+                  :class="{ 'target-switch__option--active': isTeamTarget(result) }"
+                  @click="setTeamTarget(result)"
+                >
+                  Команда
+                </button>
+                <button
+                  type="button"
+                  class="target-switch__option"
+                  :class="{ 'target-switch__option--active': !isTeamTarget(result) }"
+                  @click="ensureResultUser(result)"
+                >
+                  Персонально
+                </button>
               </div>
 
-              <div v-if="(result.team_external_id ?? '').trim() !== '' || result.user == null" class="form-grid">
-                <label>team_external_id
+              <div v-if="isTeamTarget(result)" class="form-grid">
+                <label class="full">team_external_id
                   <input v-model="result.team_external_id" type="text" placeholder="team-alpha">
                 </label>
               </div>
 
-              <div v-if="result.user" class="form-grid">
+              <div v-else class="form-grid">
                 <label>Имя <input v-model="result.user.name" type="text"></label>
                 <label>email <input v-model="result.user.email" type="text"></label>
                 <label>telegram_id <input v-model.number="result.user.telegram_id" type="number"></label>
@@ -667,25 +686,39 @@
     border: 1px dashed rgba($color-accent, 0.25);
     border-radius: $radius-lg;
     padding: 12px;
+    background: rgba($color-surface, 0.35);
   }
 
   .target-switch {
-    display: flex;
-    gap: 12px;
+    display: inline-flex;
+    gap: 8px;
+    width: fit-content;
+    padding: 4px;
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    background: rgba($color-surface, 0.75);
   }
 
-  .radio {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: $color-text-primary;
+  .target-switch__option {
+    border: 1px solid transparent;
+    border-radius: $radius-full;
+    background: transparent;
+    color: $color-text-secondary;
+    font: inherit;
     font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
 
-    input[type='radio'] {
-      width: 16px;
-      height: 16px;
-      margin: 0;
-      accent-color: $color-accent;
+    &--active {
+      border-color: rgba($color-accent, 0.35);
+      background: rgba($color-accent, 0.16);
+      color: $color-text-primary;
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 1px rgba($color-accent, 0.45);
     }
   }
 
