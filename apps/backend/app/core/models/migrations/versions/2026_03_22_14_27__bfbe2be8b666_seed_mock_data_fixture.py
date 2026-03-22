@@ -23,7 +23,7 @@ from app.core.models.migrations.fixtures.mock_data import (
 )
 
 revision: str = "bfbe2be8b666"
-down_revision: str | None = "91f53ebe3814"
+down_revision: str | None = "b7d4f9a2c1e0"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
