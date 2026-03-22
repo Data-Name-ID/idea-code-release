@@ -24,7 +24,14 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   })
 
   if (!response.ok) {
-    throw new Error(`API ${response.status}: ${response.statusText}`)
+    let detail = ''
+    try {
+      const errBody = (await response.json()) as Record<string, unknown>
+      if (typeof errBody.detail === 'string' && errBody.detail) detail = `: ${errBody.detail}`
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(`API ${response.status}${detail}`)
   }
 
   if (response.status === 204) {

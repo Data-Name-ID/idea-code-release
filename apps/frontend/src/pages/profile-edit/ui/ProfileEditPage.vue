@@ -2,7 +2,7 @@
   import { ref, reactive, onMounted, computed } from 'vue'
   import { useRouter } from 'vue-router'
 
-  import { authState, setCurrentUser } from '@shared/auth/session'
+  import { authState, setCurrentUser, clearCurrentUser } from '@shared/auth/session'
   import { userApi } from '@entities/user/api'
   import { roleApi } from '@entities/role/api'
   import { skillApi } from '@entities/skill/api'
@@ -161,9 +161,9 @@
         name: form.name || null,
         email: form.email || null,
         avatar: form.avatar || null,
-        location: form.location || null,
-        description: form.description || null,
-        links: form.links.filter((l) => l.url.trim()),
+        location: form.location,
+        description: form.description,
+        links: form.links.filter((l) => l.url.trim() !== ''),
         role_ids: form.roleIds,
         skill_ids: form.skillIds,
         open_to_teamup: form.openToTeamup,
@@ -171,6 +171,11 @@
       setCurrentUser(updated)
       await router.replace({ name: 'profile' })
     } catch (e) {
+      if (e instanceof Error && e.message.includes('API 401')) {
+        clearCurrentUser()
+        await router.replace({ name: 'auth' })
+        return
+      }
       saveError.value = e instanceof Error ? e.message : 'Не удалось сохранить профиль'
     } finally {
       isSaving.value = false
