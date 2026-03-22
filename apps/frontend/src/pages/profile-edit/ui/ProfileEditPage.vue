@@ -508,7 +508,7 @@
     border-radius: $radius-full;
     border: none;
     background: $color-accent;
-    color: #fff;
+    color: -text-primary;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -553,7 +553,7 @@
   .section-nav__item {
     border: 1px solid $color-border;
     border-radius: $radius-full;
-    background: #1a1b20;
+    background: $color-bg-muted;
     color: $color-text-secondary;
     padding: 6px 12px;
     font-size: 12px;
@@ -561,7 +561,7 @@
     white-space: nowrap;
 
     &:hover {
-      color: #fff;
+      color: -text-primary;
       border-color: rgba($color-accent, 0.6);
     }
   }
@@ -572,7 +572,7 @@
     border-radius: $radius-md;
     background: rgba($color-danger, 0.15);
     border: 1px solid rgba($color-danger, 0.4);
-    color: #f87171;
+    color: -danger;
     font-size: 14px;
 
     @include respond-to('lg') {
@@ -588,7 +588,7 @@
 
     @include respond-to('lg') {
       padding: 28px 32px;
-      background: #141417;
+      background: -bg-elevated;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
     }
@@ -649,7 +649,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: #2a2a2a;
+    background: -surface-soft;
     @include flex-center;
     color: $color-text-secondary;
   }
@@ -668,7 +668,7 @@
     border: 1px solid rgba($color-accent, 0.5);
     border-radius: $radius-full;
     background: rgba($color-accent, 0.14);
-    color: #fff;
+    color: -text-primary;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -720,9 +720,9 @@
     margin: 0;
     padding: 10px 14px;
     border-radius: $radius-md;
-    background: rgba(#34d399, 0.12);
-    border: 1px solid rgba(#34d399, 0.35);
-    color: #34d399;
+    background: -success-soft;
+    border: 1px solid -success-border;
+    color: -success;
     font-size: 14px;
   }
 
@@ -750,8 +750,8 @@
     cursor: pointer;
 
     &:hover {
-      border-color: #f87171;
-      color: #f87171;
+      border-color: -danger;
+      color: -danger;
     }
   }
 
@@ -809,7 +809,7 @@
     border-radius: $radius-lg;
     border: none;
     background: $color-accent;
-    color: #fff;
+    color: -text-primary;
     font-size: 15px;
     font-weight: 700;
     font-family: inherit;

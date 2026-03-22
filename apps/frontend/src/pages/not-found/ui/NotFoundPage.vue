@@ -7,10 +7,7 @@
 
 <style scoped lang="scss">
   .not-found {
-    min-height: 100dvh;
-    background: $color-bg;
-    color: $color-text-primary;
-    font-family: $font-family-base;
+    @include page-root;
     @include flex-center;
     flex-direction: column;
     gap: 16px;

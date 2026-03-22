@@ -5,6 +5,7 @@
   import { fetchTelegramConfig, telegramLogin } from '@shared/auth/api'
   import { setCurrentUser } from '@shared/auth/session'
   import type { TelegramWidgetUser } from '@shared/auth/types'
+  import { BaseStatusMessage } from '@shared/ui'
 
   declare global {
     interface Window {
@@ -128,7 +129,9 @@
           <div class="spinner" />
           <span>Проверка...</span>
         </div>
-        <p v-if="error" class="auth-card__error">{{ error }}</p>
+        <BaseStatusMessage v-if="error" tone="error" class="auth-card__error">
+          {{ error }}
+        </BaseStatusMessage>
         <p v-if="hostnameMismatch && canonicalAuthUrl" class="auth-card__hint">
           Откройте страницу через:
           <a :href="canonicalAuthUrl" class="auth-card__link">{{ canonicalAuthUrl }}</a>
@@ -199,19 +202,6 @@
       color: $color-text-secondary;
     }
 
-    &__error {
-      margin: 0;
-      font-size: 13px;
-      color: $color-danger;
-      text-align: center;
-      background: rgba($color-danger, 0.08);
-      border: 1px solid rgba($color-danger, 0.2);
-      border-radius: $radius-md;
-      padding: 10px 14px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
     &__hint {
       margin: 0;
       font-size: 13px;
@@ -234,11 +224,18 @@
   .spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    border: 2px solid $color-border-strong;
     border-top-color: $color-accent;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
     flex-shrink: 0;
+  }
+
+  .auth-card__error {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 13px;
   }
 
   @keyframes spin {

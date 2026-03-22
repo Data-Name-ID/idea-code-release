@@ -53,13 +53,13 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 120;
+    z-index: $z-nav;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
     border-top: 1px solid $color-border;
-    background: rgba(18, 18, 20, 0.96);
+    background: rgba($color-bg, 0.96);
     backdrop-filter: blur(12px);
   }
 
@@ -81,8 +81,8 @@
     }
 
     &--active {
-      color: #fff;
-      background: rgba($color-accent, 0.28);
+      color: $color-text-primary;
+      background: rgba($color-accent, 0.24);
     }
   }
 

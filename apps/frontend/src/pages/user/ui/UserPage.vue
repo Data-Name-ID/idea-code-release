@@ -4,6 +4,7 @@
 
   import { userApi } from '@entities/user/api'
   import { useUserActivity } from '@shared/composables/useUserActivity'
+  import { BaseTopBar } from '@shared/ui'
   import type { ActivityFilter } from '@widgets/ActivityFeed/model/types'
 
   import UserProfileCard from '@widgets/UserProfileCard/ui/UserProfileCard.vue'
@@ -38,15 +39,7 @@
 
 <template>
   <div class="user-page">
-    <header class="page-header">
-      <button class="back-btn" @click="router.back()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-        </svg>
-      </button>
-      <span class="page-header__title">Участник</span>
-      <div style="width: 36px" />
-    </header>
+    <BaseTopBar title="Участник" @back="router.back()" />
 
     <div v-if="isLoading" class="profile-skeleton">
       <div class="skel skel--avatar" />
@@ -102,33 +95,8 @@
     @include page-root;
   }
 
-  .page-header {
-    @include sticky-header;
-  }
-
-  .page-header__title {
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .back-btn {
-    @include back-button;
-  }
-
   .profile-body {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 16px 16px 48px;
-
-    @include respond-to('lg') {
-      flex-direction: row;
-      align-items: flex-start;
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px 32px 64px;
-    }
+    @include page-content-shell;
   }
 
   .profile-sidebar {
@@ -147,13 +115,13 @@
     @include respond-to('lg') {
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
-      background: #141417;
+      background: $color-bg-elevated;
     }
   }
 
   .sidebar-section {
     @include respond-to('lg') {
-      background: #1a1a1d;
+      background: $color-bg-muted;
       border: 1px solid rgba($color-accent, 0.2);
       border-radius: $radius-2xl;
     }
@@ -173,7 +141,7 @@
 
   .main-section {
     @include respond-to('lg') {
-      background: #141417;
+      background: $color-bg-elevated;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
       padding: 28px 32px;

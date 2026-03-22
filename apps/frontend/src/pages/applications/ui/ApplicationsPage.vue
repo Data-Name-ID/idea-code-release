@@ -8,6 +8,14 @@
   import { skillApi } from '@entities/skill/api'
   import { authState } from '@shared/auth/session'
   import { formatDateLong } from '@shared/lib/format'
+  import {
+    BaseButton,
+    BaseCard,
+    BaseCheckbox,
+    BaseSelect,
+    BaseStatusMessage,
+    BaseTextarea,
+  } from '@shared/ui'
   import type {
     ApplicationStatus,
     EventResponse,
@@ -183,26 +191,25 @@
           <h1 class="section-title">Новая заявка</h1>
 
           <div class="form-grid">
-            <select v-model="createForm.eventId" class="field" :disabled="isCreating">
+            <BaseSelect v-model="createForm.eventId" :disabled="isCreating">
               <option value="">Выберите хакатон</option>
               <option v-for="event in allEvents" :key="event.id" :value="String(event.id)">
                 {{ event.title }} · {{ formatDateLong(event.date) }}
               </option>
-            </select>
+            </BaseSelect>
 
-            <select v-model="createForm.desiredRole" class="field" :disabled="isCreating">
+            <BaseSelect v-model="createForm.desiredRole" :disabled="isCreating">
               <option value="">Желаемая роль</option>
               <option v-for="role in allRoles" :key="role.id" :value="role.name">{{ role.name }}</option>
-            </select>
+            </BaseSelect>
 
-            <select v-model="createForm.preferredTeamFormat" class="field" :disabled="isCreating">
+            <BaseSelect v-model="createForm.preferredTeamFormat" :disabled="isCreating">
               <option value="team">Хочу в команду</option>
               <option value="solo">Рассматриваю solo</option>
-            </select>
+            </BaseSelect>
 
-            <textarea
+            <BaseTextarea
               v-model="createForm.comment"
-              class="field"
               rows="3"
               placeholder="Комментарий о вашем опыте и ожиданиях"
               :disabled="isCreating"
@@ -223,49 +230,50 @@
             </button>
           </div>
 
-          <p v-if="createError" class="error">{{ createError }}</p>
+          <BaseStatusMessage v-if="createError" tone="error">{{ createError }}</BaseStatusMessage>
 
-          <button type="button" class="btn" :disabled="isCreating" @click="createApplication">
+          <BaseButton type="button" :loading="isCreating" @click="createApplication">
             {{ isCreating ? 'Отправляем…' : 'Оставить заявку' }}
-          </button>
+          </BaseButton>
         </section>
 
         <section class="sidebar-section">
           <h2 class="section-subtitle">Фильтры списка</h2>
 
           <div class="form-grid">
-            <select v-model="filters.eventId" class="field" :disabled="isLoading">
+            <BaseSelect v-model="filters.eventId" :disabled="isLoading">
               <option :value="undefined">Все хакатоны</option>
               <option v-for="event in allEvents" :key="event.id" :value="event.id">{{ event.title }}</option>
-            </select>
+            </BaseSelect>
 
-            <select v-model="filters.status" class="field" :disabled="isLoading">
+            <BaseSelect v-model="filters.status" :disabled="isLoading">
               <option :value="undefined">Все статусы</option>
               <option v-for="status in statusOptions" :key="status" :value="status">{{ statusLabels[status] }}</option>
-            </select>
+            </BaseSelect>
           </div>
 
-          <label class="checkbox-row">
-            <input v-model="filters.onlyMine" type="checkbox" :disabled="isLoading" />
+          <BaseCheckbox v-model="filters.onlyMine" :disabled="isLoading">
             Только мои заявки
-          </label>
+          </BaseCheckbox>
 
-          <button type="button" class="btn btn--ghost" :disabled="isLoading" @click="submitFilters">Применить</button>
+          <BaseButton type="button" variant="ghost" :disabled="isLoading" @click="submitFilters">
+            Применить
+          </BaseButton>
         </section>
       </aside>
 
       <main class="applications-main">
         <section class="main-section">
-          <p v-if="error" class="error">{{ error }}</p>
+          <BaseStatusMessage v-if="error" tone="error">{{ error }}</BaseStatusMessage>
           <p v-else class="summary">Показаны {{ pageFrom }}-{{ pageTo }} из {{ total }}</p>
 
-          <p v-if="statusError" class="error">{{ statusError }}</p>
+          <BaseStatusMessage v-if="statusError" tone="error">{{ statusError }}</BaseStatusMessage>
 
           <section v-if="isLoading" class="state">Загрузка...</section>
           <section v-else-if="list.length === 0" class="state">Список пуст</section>
 
           <section v-else class="list">
-            <article v-for="item in list" :key="item.id" class="card">
+            <BaseCard v-for="item in list" :key="item.id" class="card">
               <div class="row">
                 <strong>#{{ item.id }}</strong>
                 <span class="status" :class="`status--${item.status}`">{{ statusLabels[item.status] }}</span>
@@ -283,37 +291,41 @@
               </p>
 
               <div class="actions">
-                <button
+                <BaseButton
                   type="button"
-                  class="btn btn--ghost"
+                  variant="ghost"
                   :disabled="isLoading || isUpdatingId === item.id"
                   @click="updateStatus(item, 'pending')"
                 >
                   На рассмотрении
-                </button>
-                <button
+                </BaseButton>
+                <BaseButton
                   type="button"
-                  class="btn btn--ghost"
+                  variant="ghost"
                   :disabled="isLoading || isUpdatingId === item.id"
                   @click="updateStatus(item, 'approved')"
                 >
                   Одобрить
-                </button>
-                <button
+                </BaseButton>
+                <BaseButton
                   type="button"
-                  class="btn btn--ghost"
+                  variant="ghost"
                   :disabled="isLoading || isUpdatingId === item.id"
                   @click="updateStatus(item, 'rejected')"
                 >
                   Отклонить
-                </button>
+                </BaseButton>
               </div>
-            </article>
+            </BaseCard>
           </section>
 
           <footer class="pager">
-            <button type="button" class="btn btn--ghost" :disabled="isLoading || !canPrev" @click="prevPage">Назад</button>
-            <button type="button" class="btn btn--ghost" :disabled="isLoading || !canNext" @click="nextPage">Вперёд</button>
+            <BaseButton type="button" variant="ghost" :disabled="isLoading || !canPrev" @click="prevPage">
+              Назад
+            </BaseButton>
+            <BaseButton type="button" variant="ghost" :disabled="isLoading || !canNext" @click="nextPage">
+              Вперёд
+            </BaseButton>
           </footer>
         </section>
       </main>
@@ -327,72 +339,19 @@
   }
 
   .edit-bar {
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px 16px 0;
-    border-bottom: 1px solid $color-border;
-
-    @include respond-to('lg') {
-      padding: 0;
-      border-bottom: none;
-    }
+    @include top-links-bar;
   }
 
   .edit-bar__inner {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 10px 0 10px;
-
-    @include respond-to('lg') {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 14px 32px;
-      border-bottom: 1px solid $color-border;
-    }
+    @include top-links-inner;
   }
 
   .edit-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: $radius-full;
-    border: 1px solid $color-border;
-    color: $color-text-secondary;
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: border-color $transition-fast, color $transition-fast, background-color $transition-fast;
-
-    &:hover {
-      border-color: $color-accent;
-      color: $color-accent;
-      text-decoration: none;
-    }
-
-    &.router-link-exact-active {
-      border-color: rgba($color-accent, 0.45);
-      background: rgba($color-accent, 0.12);
-      color: $color-accent;
-    }
+    @include top-link-pill;
   }
 
   .applications-body {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 16px 16px 48px;
-
-    @include respond-to('lg') {
-      flex-direction: row;
-      align-items: flex-start;
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px 32px 64px;
-    }
+    @include page-content-shell;
   }
 
   .applications-sidebar {
@@ -408,9 +367,7 @@
   }
 
   .sidebar-section {
-    background: #1a1a1d;
-    border: 1px solid rgba($color-accent, 0.2);
-    border-radius: $radius-2xl;
+    @include panel-surface($accent: true);
     padding: 20px;
     display: grid;
     gap: 12px;
@@ -430,22 +387,6 @@
   .form-grid {
     display: grid;
     gap: 10px;
-  }
-
-  .field {
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    background: $color-surface;
-    color: $color-text-primary;
-    padding: 9px 12px;
-  }
-
-  .checkbox-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: $color-text-secondary;
   }
 
   .chips {
@@ -474,29 +415,6 @@
     background: rgba($color-accent, 0.16);
   }
 
-  .btn {
-    border: 1px solid transparent;
-    border-radius: $radius-md;
-    padding: 8px 12px;
-    background: $color-accent;
-    color: #0f0f11;
-    font-weight: 600;
-    cursor: pointer;
-    width: fit-content;
-    transition: border-color $transition-fast, color $transition-fast, opacity $transition-fast;
-
-    &:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-  }
-
-  .btn--ghost {
-    background: transparent;
-    border-color: $color-border;
-    color: $color-text-primary;
-  }
-
   .applications-main {
     min-width: 0;
 
@@ -506,22 +424,9 @@
   }
 
   .main-section {
-    background: #141417;
-    border: 1px solid $color-border;
-    border-radius: $radius-2xl;
-    padding: 20px;
+    @include section-panel;
     display: grid;
     gap: 12px;
-
-    @include respond-to('lg') {
-      padding: 28px 32px;
-      gap: 16px;
-    }
-  }
-
-  .error {
-    margin: 0;
-    color: #ff8787;
   }
 
   .summary {
@@ -542,10 +447,7 @@
   }
 
   .card {
-    border: 1px solid $color-border;
-    border-radius: $radius-xl;
     padding: 14px;
-    background: #141417;
 
     p {
       margin: 6px 0 0;
@@ -571,18 +473,18 @@
   }
 
   .status--pending {
-    border-color: #9aa2b1;
-    color: #c4cad6;
+    border-color: rgba($color-silver, 0.5);
+    color: $color-silver;
   }
 
   .status--approved {
-    border-color: #3ca25f;
-    color: #6fe58f;
+    border-color: $color-success-border;
+    color: $color-success;
   }
 
   .status--rejected {
-    border-color: #a23c3c;
-    color: #f09191;
+    border-color: $color-danger-border;
+    color: $color-danger;
   }
 
   .meta {

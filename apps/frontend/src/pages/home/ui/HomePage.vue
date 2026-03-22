@@ -28,11 +28,14 @@
   </section>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
   .home {
+    @include page-root;
     max-width: 720px;
     display: grid;
     gap: 0.75rem;
+    margin: 0 auto;
+    padding: 24px 16px;
   }
 
   h2 {
@@ -42,7 +45,7 @@
   code {
     padding: 0.125rem 0.375rem;
     border-radius: 0.375rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: $color-surface;
+    border: 1px solid $color-border;
   }
 </style>

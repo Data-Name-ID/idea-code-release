@@ -1,14 +1,28 @@
 // Colors — dark theme
 $color-bg: #121212;
+$color-bg-elevated: #141417;
+$color-bg-muted: #1a1a1d;
 $color-surface: #1c1c1e;
+$color-surface-soft: #222327;
 $color-border: rgba(255, 255, 255, 0.08);
+$color-border-strong: rgba(255, 255, 255, 0.2);
 $color-accent: #ff6b2b;
 $color-gold: #f5c542;
 $color-silver: #a8b2c0;
 $color-danger: #ff6b6b;
 $color-success: #4ade80;
 $color-text-primary: #ffffff;
-$color-text-secondary: rgba(255, 255, 255, 0.5);
+$color-text-secondary: rgba(255, 255, 255, 0.68);
+$color-text-muted: rgba(255, 255, 255, 0.5);
+$color-text-inverse: #0f0f11;
+
+// Semantic overlays
+$color-accent-soft: rgba($color-accent, 0.12);
+$color-accent-border: rgba($color-accent, 0.35);
+$color-danger-soft: rgba($color-danger, 0.14);
+$color-danger-border: rgba($color-danger, 0.32);
+$color-success-soft: rgba($color-success, 0.14);
+$color-success-border: rgba($color-success, 0.32);
 
 // Typography
 $font-family-base: 'Manrope', 'IBM Plex Sans', sans-serif;
@@ -23,8 +37,20 @@ $radius-2xl: 16px;
 $radius-3xl: 24px;
 $radius-full: 100px;
 
+// Spacing scale
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-5: 20px;
+$space-6: 24px;
+$space-7: 28px;
+$space-8: 32px;
+
 // Transitions
 $transition-fast: 150ms ease;
+$transition-normal: 220ms ease;
 
 // Z-index
 $z-sticky: 10;
+$z-nav: 120;

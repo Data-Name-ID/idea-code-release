@@ -9,6 +9,7 @@
   import { userApi } from '@entities/user/api'
   import { teamApi } from '@entities/team/api'
   import { formatDateLong, initials } from '@shared/lib/format'
+  import { BaseButton, BaseSelect, BaseStatusMessage, BaseTextarea, BaseTopBar } from '@shared/ui'
   import type { RoleResponse, SkillResponse } from '@shared/types/api'
   import type { RatingEntry } from '../model/types'
 
@@ -147,15 +148,7 @@
 
 <template>
   <div class="event-page">
-    <header class="page-header">
-      <button class="back-btn" @click="router.back()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-        </svg>
-      </button>
-      <span class="page-header__title">Мероприятие</span>
-      <div style="width: 36px" />
-    </header>
+    <BaseTopBar title="Мероприятие" @back="router.back()" />
 
     <template v-if="isLoading">
       <div class="page-body">
@@ -204,20 +197,19 @@
         </div>
 
         <div class="application__grid">
-          <select v-model="applicationForm.desiredRole" class="application__field">
+          <BaseSelect v-model="applicationForm.desiredRole">
             <option value="">Желаемая роль</option>
             <option v-for="role in allRoles" :key="role.id" :value="role.name">{{ role.name }}</option>
-          </select>
+          </BaseSelect>
 
-          <select v-model="applicationForm.preferredTeamFormat" class="application__field">
+          <BaseSelect v-model="applicationForm.preferredTeamFormat">
             <option value="team">Хочу в команду</option>
             <option value="solo">Рассматриваю solo</option>
-          </select>
+          </BaseSelect>
         </div>
 
-        <textarea
+        <BaseTextarea
           v-model="applicationForm.comment"
-          class="application__field"
           rows="3"
           placeholder="Комментарий о вашем опыте и ожиданиях"
         />
@@ -235,12 +227,12 @@
           </button>
         </div>
 
-        <p v-if="applicationError" class="application__error">{{ applicationError }}</p>
-        <p v-if="applicationSuccess" class="application__success">{{ applicationSuccess }}</p>
+        <BaseStatusMessage v-if="applicationError" tone="error">{{ applicationError }}</BaseStatusMessage>
+        <BaseStatusMessage v-if="applicationSuccess" tone="success">{{ applicationSuccess }}</BaseStatusMessage>
 
-        <button type="button" class="application__submit" :disabled="isSendingApplication" @click="sendApplication">
+        <BaseButton type="button" :loading="isSendingApplication" @click="sendApplication">
           {{ isSendingApplication ? 'Отправляем…' : 'Оставить заявку' }}
-        </button>
+        </BaseButton>
       </section>
 
       <section v-if="entries.length" class="ratings">
@@ -359,19 +351,6 @@
     @include page-root;
   }
 
-  .page-header {
-    @include sticky-header;
-  }
-
-  .page-header__title {
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .back-btn {
-    @include back-button;
-  }
-
   .page-body {
     @include respond-to('lg') {
       max-width: 1200px;
@@ -386,7 +365,7 @@
   .cover {
     position: relative;
     height: 220px;
-    background: #1e1e1e;
+    background: $color-surface;
 
     @include respond-to('lg') {
       height: 400px;
@@ -405,7 +384,7 @@
   .cover__placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+    background: linear-gradient(135deg, $color-surface 0%, $color-surface-soft 100%);
   }
 
   .cover__badge {
@@ -432,7 +411,7 @@
 
     @include respond-to('lg') {
       padding: 28px 32px;
-      background: #141417;
+      background: $color-bg-elevated;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
     }
@@ -469,7 +448,7 @@
 
     @include respond-to('lg') {
       padding: 28px 32px;
-      background: #141417;
+      background: $color-bg-elevated;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
     }
@@ -503,18 +482,6 @@
     }
   }
 
-  .application__field {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: $radius-md;
-    border: 1px solid $color-border;
-    background: $color-surface;
-    color: $color-text-primary;
-    font-size: 14px;
-    font-family: inherit;
-    box-sizing: border-box;
-  }
-
   .application__skills {
     display: flex;
     flex-wrap: wrap;
@@ -537,27 +504,8 @@
     background: rgba($color-accent, 0.12);
   }
 
-  .application__submit {
+  :deep(.base-button) {
     align-self: flex-start;
-    border: none;
-    border-radius: $radius-full;
-    padding: 8px 14px;
-    background: $color-accent;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .application__error {
-    margin: 0;
-    color: #f87171;
-    font-size: 13px;
-  }
-
-  .application__success {
-    margin: 0;
-    color: #34d399;
-    font-size: 13px;
   }
 
   .ratings {
@@ -566,7 +514,7 @@
 
     @include respond-to('lg') {
       padding: 28px 32px;
-      background: #141417;
+      background: $color-bg-elevated;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
     }
@@ -619,7 +567,7 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: #2a2a2a;
+    background: $color-surface-soft;
     @include flex-center;
     font-size: 15px;
     font-weight: 700;

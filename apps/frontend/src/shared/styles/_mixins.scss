@@ -1,4 +1,5 @@
 @use 'variables' as *;
+@use 'breakpoints' as *;
 
 @mixin flex-center {
   display: flex;
@@ -27,7 +28,7 @@
 }
 
 @mixin skeleton-shimmer {
-  background: linear-gradient(90deg, #1e1e1e 25%, #282828 50%, #1e1e1e 75%);
+  background: linear-gradient(90deg, $color-bg-elevated 25%, $color-bg-muted 50%, $color-bg-elevated 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -40,6 +41,22 @@
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }
 
+@mixin page-content-shell {
+  display: flex;
+  flex-direction: column;
+  gap: $space-5;
+  padding: $space-4 $space-4 48px;
+
+  @include respond-to('lg') {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: $space-6;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: $space-8 $space-8 64px;
+  }
+}
+
 @mixin sticky-header {
   @include flex-between;
   padding: 12px 16px;
@@ -47,7 +64,8 @@
   position: sticky;
   top: 0;
   z-index: $z-sticky;
-  background: $color-bg;
+  background: rgba($color-bg, 0.9);
+  backdrop-filter: blur(12px);
 }
 
 @mixin back-button {
@@ -65,11 +83,169 @@
   }
 }
 
-@mixin card-interactive {
-  cursor: pointer;
-  transition: border-color $transition-fast;
+@mixin top-links-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px $space-4 0;
+  border-bottom: 1px solid $color-border;
+
+  @include respond-to('lg') {
+    padding: 0;
+    border-bottom: none;
+  }
+}
+
+@mixin top-links-inner {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-2;
+  padding: 10px 0;
+
+  @include respond-to('lg') {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 14px $space-8;
+    border-bottom: 1px solid $color-border;
+  }
+}
+
+@mixin top-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: $radius-full;
+  border: 1px solid $color-border;
+  color: $color-text-secondary;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color $transition-fast, color $transition-fast, background-color $transition-fast;
 
   &:hover {
-    border-color: $color-text-secondary;
+    border-color: $color-accent-border;
+    color: $color-accent;
+    background: $color-accent-soft;
+    text-decoration: none;
+  }
+
+  &.router-link-exact-active {
+    border-color: $color-accent-border;
+    background: $color-accent-soft;
+    color: $color-accent;
+  }
+}
+
+@mixin panel-surface($accent: false) {
+  background: $color-bg-elevated;
+  border: 1px solid $color-border;
+  border-radius: $radius-2xl;
+
+  @if $accent {
+    background: $color-bg-muted;
+    border-color: rgba($color-accent, 0.2);
+  }
+}
+
+@mixin section-panel {
+  @include panel-surface;
+  padding: $space-5;
+  display: grid;
+  gap: $space-3;
+
+  @include respond-to('lg') {
+    padding: $space-7 $space-8;
+    gap: $space-4;
+  }
+}
+
+@mixin field-control {
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-surface;
+  color: $color-text-primary;
+  padding: 9px 12px;
+  font: inherit;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: $color-accent-border;
+    box-shadow: 0 0 0 1px $color-accent-border;
+  }
+}
+
+@mixin button-base {
+  border: 1px solid transparent;
+  border-radius: $radius-md;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color $transition-fast, background-color $transition-fast, color $transition-fast, opacity $transition-fast;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background: $color-accent;
+  color: $color-text-inverse;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, $color-accent 90%, white 10%);
+  }
+}
+
+@mixin button-ghost {
+  @include button-base;
+  background: transparent;
+  border-color: $color-border;
+  color: $color-text-primary;
+
+  &:hover:not(:disabled) {
+    border-color: $color-accent-border;
+    color: $color-accent;
+    background: $color-accent-soft;
+  }
+}
+
+@mixin state-message($tone: 'info') {
+  margin: 0;
+  border-radius: $radius-md;
+  padding: 10px 14px;
+  border: 1px solid $color-border;
+
+  @if $tone == 'error' {
+    color: $color-danger;
+    background: $color-danger-soft;
+    border-color: $color-danger-border;
+  } @else if $tone == 'success' {
+    color: $color-success;
+    background: $color-success-soft;
+    border-color: $color-success-border;
+  } @else {
+    color: $color-text-secondary;
+    background: rgba($color-surface, 0.65);
+  }
+}
+
+@mixin card-interactive {
+  cursor: pointer;
+  transition: border-color $transition-fast, transform $transition-fast;
+
+  &:hover,
+  &:focus-visible {
+    border-color: $color-accent-border;
+    transform: translateY(-1px);
+    outline: none;
   }
 }

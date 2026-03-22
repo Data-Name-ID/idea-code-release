@@ -125,7 +125,7 @@
     display: block;
 
     &--placeholder {
-      background: #2a2a2a;
+      background: -surface-soft;
     }
   }
 

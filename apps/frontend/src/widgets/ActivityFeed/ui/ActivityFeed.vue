@@ -166,7 +166,7 @@
     &--active {
       background: $color-accent;
       border-color: $color-accent;
-      color: #fff;
+      color: -text-primary;
     }
   }
 
@@ -188,7 +188,7 @@
   .event-card__cover {
     position: relative;
     height: 160px;
-    background: #1e1e1e;
+    background: -surface;
   }
 
   .event-card__img {
@@ -198,7 +198,7 @@
     display: block;
 
     &--placeholder {
-      background: #2a2a2a;
+      background: -surface-soft;
     }
   }
 
@@ -214,7 +214,7 @@
     background: rgba($color-accent, 0.9);
     font-size: 12px;
     font-weight: 600;
-    color: #fff;
+    color: -text-primary;
   }
 
   .event-card__body {

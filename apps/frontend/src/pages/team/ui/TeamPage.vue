@@ -5,6 +5,7 @@
   import { teamApi } from '@entities/team/api'
   import { eventApi } from '@entities/event/api'
   import { formatDateLong, initials, ratingStatusLabel } from '@shared/lib/format'
+  import { BaseTopBar } from '@shared/ui'
   import type { EventRatingStatus } from '@shared/types/api'
   import type { EventResult } from '../model/types'
 
@@ -60,15 +61,7 @@
 
 <template>
   <div class="team-page">
-    <header class="page-header">
-      <button class="back-btn" @click="router.back()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-        </svg>
-      </button>
-      <span class="page-header__title">Команда</span>
-      <div style="width: 36px" />
-    </header>
+    <BaseTopBar title="Команда" @back="router.back()" />
 
     <template v-if="isLoading">
       <div class="page-body">
@@ -185,19 +178,6 @@
     @include page-root;
   }
 
-  .page-header {
-    @include sticky-header;
-  }
-
-  .page-header__title {
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .back-btn {
-    @include back-button;
-  }
-
   .page-body {
     @include respond-to('lg') {
       max-width: 1200px;
@@ -217,7 +197,7 @@
 
     @include respond-to('lg') {
       padding: 40px 48px;
-      background: #141417;
+      background: $color-bg-elevated;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
     }
@@ -283,7 +263,7 @@
 
     @include respond-to('lg') {
       padding: 28px 32px;
-      background: #141417;
+      background: $color-bg-elevated;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
     }
@@ -320,7 +300,7 @@
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    background: #2a2a2a;
+    background: $color-surface-soft;
     @include flex-center;
     font-size: 14px;
     font-weight: 700;
@@ -370,7 +350,7 @@
   .event-card__cover {
     position: relative;
     height: 120px;
-    background: #1e1e1e;
+    background: $color-surface;
   }
 
   .event-card__img {
@@ -379,7 +359,7 @@
     object-fit: cover;
     display: block;
 
-    &--placeholder { background: #2a2a2a; }
+    &--placeholder { background: $color-surface-soft; }
   }
 
   .event-card__badge {
@@ -394,12 +374,12 @@
     background: rgba($color-gold, 0.9);
     font-size: 11px;
     font-weight: 700;
-    color: #1a1400;
+    color: $color-text-inverse;
   }
 
   .event-card--prize .event-card__badge {
     background: rgba($color-silver, 0.9);
-    color: #0d0f11;
+    color: $color-text-inverse;
   }
 
   .event-card__verify {

@@ -95,68 +95,21 @@
   // ─── Edit bar ────────────────────────────────────────────────────────────────
 
   .edit-bar {
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px 16px 0;
-    border-bottom: 1px solid $color-border;
-
-    @include respond-to('lg') {
-      padding: 0;
-      border-bottom: none;
-    }
+    @include top-links-bar;
   }
 
   .edit-bar__inner {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 10px 0 10px;
-
-    @include respond-to('lg') {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 14px 32px;
-      border-bottom: 1px solid $color-border;
-    }
+    @include top-links-inner;
   }
 
   .edit-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: $radius-full;
-    border: 1px solid $color-border;
-    color: $color-text-secondary;
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: border-color $transition-fast, color $transition-fast;
-
-    &:hover {
-      border-color: $color-accent;
-      color: $color-accent;
-      text-decoration: none;
-    }
+    @include top-link-pill;
   }
 
   // ─── Body layout ─────────────────────────────────────────────────────────────
 
   .profile-body {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 16px 16px 48px;
-
-    @include respond-to('lg') {
-      flex-direction: row;
-      align-items: flex-start;
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px 32px 64px;
-    }
+    @include page-content-shell;
   }
 
   // ─── Sidebar ─────────────────────────────────────────────────────────────────
@@ -177,13 +130,13 @@
     @include respond-to('lg') {
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
-      background: #141417;
+      background: $color-bg-elevated;
     }
   }
 
   .sidebar-section {
     @include respond-to('lg') {
-      background: #1a1a1d;
+      background: $color-bg-muted;
       border: 1px solid rgba($color-accent, 0.2);
       border-radius: $radius-2xl;
     }
@@ -205,7 +158,7 @@
 
   .main-section {
     @include respond-to('lg') {
-      background: #141417;
+      background: $color-bg-elevated;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
       padding: 28px 32px;

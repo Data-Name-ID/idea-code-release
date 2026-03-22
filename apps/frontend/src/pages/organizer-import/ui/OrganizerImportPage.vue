@@ -430,7 +430,7 @@
     border: none;
     border-radius: $radius-full;
     background: $color-accent;
-    color: #fff;
+    color: -text-primary;
     padding: 7px 14px;
     font-size: 13px;
     font-weight: 700;
@@ -606,7 +606,7 @@
   textarea {
     border: 1px solid $color-border;
     border-radius: $radius-md;
-    background: #151519;
+    background: -bg-elevated;
     color: $color-text-primary;
     padding: 10px;
     font: inherit;
@@ -717,7 +717,7 @@
   .submit-btn {
     border: none;
     background: $color-accent;
-    color: #fff;
+    color: -text-primary;
     padding: 10px 16px;
 
     &:disabled {
