@@ -33,6 +33,7 @@
   const allRoles = ref<RoleResponse[]>([])
   const allSkills = ref<SkillResponse[]>([])
   const isLoadingOptions = ref(true)
+  const optionsLoadError = ref<string | null>(null)
   const isSaving = ref(false)
   const saveError = ref<string | null>(null)
   const userTeams = ref<TeamShortResponse[]>([])
@@ -89,6 +90,8 @@
       allRoles.value = roles
       allSkills.value = skills
       userTeams.value = teams?.data ?? []
+    } catch (e) {
+      optionsLoadError.value = e instanceof Error ? e.message : 'Не удалось загрузить роли и навыки'
     } finally {
       isLoadingOptions.value = false
     }
@@ -356,6 +359,12 @@
       <section id="section-roles" class="section">
         <h2 class="section__title">Роли</h2>
         <p v-if="isLoadingOptions" class="loading-hint">Загрузка…</p>
+        <p v-else-if="optionsLoadError" class="loading-hint loading-hint--error">
+          Не удалось загрузить роли: {{ optionsLoadError }}
+        </p>
+        <p v-else-if="allRoles.length === 0" class="loading-hint">
+          Список ролей пока пуст. Добавьте роли в админке.
+        </p>
         <div v-else class="chips">
           <button
             v-for="role in allRoles"
@@ -373,6 +382,12 @@
       <section id="section-skills" class="section">
         <h2 class="section__title">Навыки</h2>
         <p v-if="isLoadingOptions" class="loading-hint">Загрузка…</p>
+        <p v-else-if="optionsLoadError" class="loading-hint loading-hint--error">
+          Не удалось загрузить навыки: {{ optionsLoadError }}
+        </p>
+        <p v-else-if="allSkills.length === 0" class="loading-hint">
+          Список навыков пока пуст. Добавьте навыки в админке.
+        </p>
         <div v-else class="chips">
           <button
             v-for="skill in allSkills"
@@ -806,6 +821,10 @@
     margin: 0;
     font-size: 13px;
     color: $color-text-secondary;
+  }
+
+  .loading-hint--error {
+    color: $color-danger;
   }
 
   .submit-btn {
