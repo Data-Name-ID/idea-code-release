@@ -9,15 +9,18 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "echo 'Run in separate terminals: yarn dev:frontend && yarn dev:backend'",
+    "dev": "echo 'Run in separate terminals: yarn dev:frontend && yarn dev:backend && yarn dev:admin'",
     "dev:frontend": "yarn workspace frontend dev",
     "dev:backend": "cd apps/backend && uv run litestar --app main:app run --host 0.0.0.0 --port 8000 -d",
-    "lint": "yarn lint:frontend && yarn lint:backend",
+    "dev:admin": "cd apps/admin && uv run python manage.py runserver 0.0.0.0:8010",
+    "lint": "yarn lint:frontend && yarn lint:backend && yarn lint:admin",
     "lint:frontend": "yarn workspace frontend lint",
     "lint:backend": "cd apps/backend && UV_CACHE_DIR=/tmp/uv-cache uv run ruff check .",
-    "typecheck": "yarn typecheck:frontend && yarn typecheck:backend",
+    "lint:admin": "cd apps/admin && UV_CACHE_DIR=/tmp/uv-cache uv run ruff check .",
+    "typecheck": "yarn typecheck:frontend && yarn typecheck:backend && yarn typecheck:admin",
     "typecheck:frontend": "yarn workspace frontend typecheck",
     "typecheck:backend": "cd apps/backend && UV_CACHE_DIR=/tmp/uv-cache uv run mypy .",
+    "typecheck:admin": "cd apps/admin && UV_CACHE_DIR=/tmp/uv-cache uv run mypy .",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down"
   }

@@ -1,0 +1,53 @@
+[project]
+name = "idea-code-admin"
+version = "0.1.0"
+description = "Django admin service for idea-code-release"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2.6,<6.0",
+    "django-unfold>=0.49.0",
+    "psycopg[binary]>=3.2.9",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.2.2",
+    "mypy>=1.19.1",
+    "ruff>=0.15.4",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+preview = true
+select = ["ALL"]
+ignore = [
+    "D",
+    "DOC",
+    "CPY",
+    "RUF012",
+    "RUF001", "RUF002", "RUF003",
+    "PLC0415",
+    "PLR6301",
+    "ANN401",
+    "ARG002",
+    "DJ001",
+    "DJ008",
+    "EXE001",
+    "FBT001", "FBT003",
+    "PLR2004",
+    "TC002",
+]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+strict = false
+disable_error_code = ["misc", "var-annotated"]
+
+[tool.django-stubs]
+django_settings_module = "admin_panel.settings"

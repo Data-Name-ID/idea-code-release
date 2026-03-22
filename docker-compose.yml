@@ -30,6 +30,20 @@ x-backend-env: &backend-env
   APP_OBJECT_STORAGE__PUBLIC_INCLUDE_BUCKET: ${APP_OBJECT_STORAGE__PUBLIC_INCLUDE_BUCKET:-}
   APP_OBJECT_STORAGE__MAX_UPLOAD_SIZE_MB: "${APP_OBJECT_STORAGE__MAX_UPLOAD_SIZE_MB:-5}"
 
+x-admin-env: &admin-env
+  APP_DB__USER: ${APP_DB__USER:-postgres}
+  APP_DB__PASSWORD: ${APP_DB__PASSWORD:-postgres}
+  APP_DB__HOST: ${APP_DB__HOST:-db}
+  APP_DB__PORT: "${APP_DB__PORT:-5432}"
+  APP_DB__NAME: ${APP_DB__NAME:-postgres}
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-CHANGE_THIS_DJANGO_SECRET}
+  DJANGO_DEBUG: "${DJANGO_DEBUG:-false}"
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,admin}
+  DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:8010,http://127.0.0.1:8010}
+  DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-admin}
+  DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
+  DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-admin}
+
 services:
   db:
     image: postgres:16-alpine
@@ -98,6 +112,32 @@ services:
       minio:
         condition: service_started
       migrate:
+        condition: service_completed_successfully
+
+  admin-migrate:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+      target: migrate
+    environment: *admin-env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+      target: prod-admin
+    environment: *admin-env
+    ports:
+      - "8010:8010"
+    depends_on:
+      db:
+        condition: service_healthy
+      admin-migrate:
         condition: service_completed_successfully
 
   frontend:

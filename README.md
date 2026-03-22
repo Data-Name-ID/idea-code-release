@@ -6,12 +6,14 @@ Monorepo for frontend and backend development with conventions optimized for tea
 
 - Frontend: Yarn 1, Vite, Vue 3, TypeScript, Vue Router
 - Backend: Python 3.12, uv, Litestar, SQLAlchemy, Alembic
+- Admin: Django, django-unfold
 - Infra: Docker Compose, Postgres, Redis
 
 ## Repository layout
 
 - `apps/frontend` - Vue app
 - `apps/backend` - Litestar API
+- `apps/admin` - Django admin/moderation console
 - `.codex/skills` - project Codex skills
 - `.github/workflows` - CI pipelines
 
@@ -38,11 +40,12 @@ cd apps/backend
 uv sync --dev
 ```
 
-Run services without Docker (two terminals):
+Run services without Docker (three terminals):
 
 ```bash
 yarn dev:frontend
 yarn dev:backend
+yarn dev:admin
 ```
 
 ## Docker
@@ -64,6 +67,7 @@ Default ports:
 
 - Frontend prod: `5173`
 - Backend: `8000`
+- Admin: `8010`
 - Postgres: `5432`
 - Redis: `6379`
 
