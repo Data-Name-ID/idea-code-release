@@ -1,4 +1,10 @@
-import type { UserResponse, UserUpdateRequest, LinkType } from '@shared/types/api'
+import type {
+  LinkType,
+  OrganizerImportRequest,
+  OrganizerImportResponse,
+  UserResponse,
+  UserUpdateRequest,
+} from '@shared/types/api'
 import {
   MOCK_ROLES,
   MOCK_SKILLS,
@@ -157,6 +163,52 @@ export function resolveMock<T>(path: string, options?: RequestInit): T {
   if (teamMatch && method === 'GET') {
     const id = parseInt(teamMatch[1])
     return (MOCK_TEAMS.find((t) => t.id === id) ?? MOCK_TEAMS[0]) as T
+  }
+
+  // POST /api/public/organizer/import
+  if (/^\/api\/public\/organizer\/import\/?$/.test(pathname) && method === 'POST') {
+    const body = JSON.parse((options?.body as string) ?? '{}') as OrganizerImportRequest
+    const hackathon = body.hackathon
+    const teams = body.teams ?? []
+    const results = body.results ?? []
+
+    const hasHackathon =
+      typeof hackathon?.external_id === 'string' &&
+      hackathon.external_id.trim().length > 0 &&
+      typeof hackathon?.title === 'string' &&
+      hackathon.title.trim().length > 0
+
+    const response: OrganizerImportResponse = {
+      hackathons: {
+        created: hasHackathon ? 1 : 0,
+        updated: 0,
+        skipped: hasHackathon ? 0 : 1,
+        errors: hasHackathon ? 0 : 1,
+      },
+      teams: {
+        created: teams.length,
+        updated: 0,
+        skipped: 0,
+        errors: 0,
+      },
+      results: {
+        created: results.length,
+        updated: 0,
+        skipped: 0,
+        errors: 0,
+      },
+      errors: hasHackathon
+        ? []
+        : [
+            {
+              entity: 'hackathon',
+              key: '',
+              detail: 'Hackathon external_id and title are required',
+            },
+          ],
+    }
+
+    return response as T
   }
 
   throw new Error(`[Mock] Unhandled: ${method} ${pathname}`)

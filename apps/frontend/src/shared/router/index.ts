@@ -57,6 +57,11 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/organizer/import',
+    name: 'organizer-import',
+    component: () => import('@pages/organizer-import/ui/OrganizerImportPage.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@pages/not-found/ui/NotFoundPage.vue'),

@@ -232,33 +232,33 @@ export const MOCK_RATINGS: Record<number, EventRatingResponse> = {
   1: {
     event_id: 1,
     ratings: [
-      { user_id: 1, status: 'winner', team_id: 1, awarded_at: '2024-10-15T22:00:00Z' },
-      { user_id: 2, status: 'prize_winner', team_id: 2, awarded_at: '2024-10-15T22:05:00Z' },
-      { user_id: 3, status: 'participant', team_id: null, awarded_at: '2024-10-15T22:10:00Z' },
+      { user_id: 1, status: 'winner', place: 1, team_id: 1, awarded_at: '2024-10-15T22:00:00Z' },
+      { user_id: 2, status: 'prize_winner', place: 2, team_id: 2, awarded_at: '2024-10-15T22:05:00Z' },
+      { user_id: 3, status: 'participant', place: 4, team_id: null, awarded_at: '2024-10-15T22:10:00Z' },
     ],
   },
   2: {
     event_id: 2,
     ratings: [
-      { user_id: 3, status: 'winner', team_id: null, awarded_at: '2024-08-20T20:00:00Z' },
-      { user_id: 1, status: 'prize_winner', team_id: 2, awarded_at: '2024-08-20T20:05:00Z' },
-      { user_id: 4, status: 'participant', team_id: null, awarded_at: '2024-08-20T20:10:00Z' },
+      { user_id: 3, status: 'winner', place: 1, team_id: null, awarded_at: '2024-08-20T20:00:00Z' },
+      { user_id: 1, status: 'prize_winner', place: 2, team_id: 2, awarded_at: '2024-08-20T20:05:00Z' },
+      { user_id: 4, status: 'participant', place: 4, team_id: null, awarded_at: '2024-08-20T20:10:00Z' },
     ],
   },
   3: {
     event_id: 3,
     ratings: [
-      { user_id: 4, status: 'winner', team_id: 3, awarded_at: '2024-06-08T18:00:00Z' },
-      { user_id: 5, status: 'prize_winner', team_id: null, awarded_at: '2024-06-08T18:05:00Z' },
-      { user_id: 1, status: 'participant', team_id: 3, awarded_at: '2024-06-08T18:10:00Z' },
+      { user_id: 4, status: 'winner', place: 1, team_id: 3, awarded_at: '2024-06-08T18:00:00Z' },
+      { user_id: 5, status: 'prize_winner', place: 2, team_id: null, awarded_at: '2024-06-08T18:05:00Z' },
+      { user_id: 1, status: 'participant', place: 4, team_id: 3, awarded_at: '2024-06-08T18:10:00Z' },
     ],
   },
   4: {
     event_id: 4,
     ratings: [
-      { user_id: 1, status: 'winner', team_id: 1, awarded_at: '2024-05-03T19:00:00Z' },
-      { user_id: 2, status: 'participant', team_id: null, awarded_at: '2024-05-03T19:05:00Z' },
-      { user_id: 5, status: 'participant', team_id: null, awarded_at: '2024-05-03T19:10:00Z' },
+      { user_id: 1, status: 'winner', place: 1, team_id: 1, awarded_at: '2024-05-03T19:00:00Z' },
+      { user_id: 2, status: 'participant', place: 4, team_id: null, awarded_at: '2024-05-03T19:05:00Z' },
+      { user_id: 5, status: 'participant', place: 5, team_id: null, awarded_at: '2024-05-03T19:10:00Z' },
     ],
   },
 }

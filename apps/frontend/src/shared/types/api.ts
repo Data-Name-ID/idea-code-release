@@ -123,6 +123,7 @@ export interface EventListResponse {
 export interface EventRatingEntryResponse {
   user_id: number
   status: EventRatingStatus
+  place: number | null
   team_id: number | null
   awarded_at: string | null
 }
@@ -177,4 +178,63 @@ export interface RefreshResponse {
   access_token: string
   token_type: string
   expires_in: number
+}
+
+// ─── Organizer Import ────────────────────────────────────
+
+export interface OrganizerMemberInput {
+  telegram_id?: number | null
+  email?: string | null
+  username?: string | null
+  name?: string
+  avatar?: string | null
+}
+
+export interface OrganizerHackathonInput {
+  external_id: string
+  title: string
+  description?: string
+  date: string
+  cover?: string | null
+}
+
+export interface OrganizerTeamInput {
+  external_id: string
+  name: string
+  description?: string
+  members?: OrganizerMemberInput[]
+}
+
+export interface OrganizerResultInput {
+  status?: EventRatingStatus | null
+  place?: number | null
+  awarded_at?: string | null
+  team_external_id?: string | null
+  user?: OrganizerMemberInput | null
+}
+
+export interface OrganizerImportRequest {
+  hackathon: OrganizerHackathonInput
+  teams: OrganizerTeamInput[]
+  results: OrganizerResultInput[]
+}
+
+export interface OrganizerImportCounters {
+  created: number
+  updated: number
+  skipped: number
+  errors: number
+}
+
+export interface OrganizerImportError {
+  entity: string
+  key: string
+  detail: string
+}
+
+export interface OrganizerImportResponse {
+  hackathons: OrganizerImportCounters
+  teams: OrganizerImportCounters
+  results: OrganizerImportCounters
+  errors: OrganizerImportError[]
 }
