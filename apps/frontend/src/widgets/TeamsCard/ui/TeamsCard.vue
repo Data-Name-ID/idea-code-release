@@ -18,47 +18,50 @@
       <span v-if="teams.length" class="card__subtitle">Состоит в {{ teams.length }} командах</span>
     </div>
 
-    <template v-if="isLoading">
-      <div v-for="n in 2" :key="n" class="team-item team-item--skeleton">
-        <div class="skel skel--name" />
-        <div class="skel skel--line" />
+    <div class="teams-grid">
+      <template v-if="isLoading">
+        <div v-for="n in 3" :key="n" class="team-item team-item--skeleton">
+          <div class="skel skel--name" />
+          <div class="skel skel--line" />
+        </div>
+      </template>
+
+      <div v-else-if="teams.length === 0" class="empty">
+        <p>Команд пока нет</p>
       </div>
-    </template>
 
-    <div v-else-if="teams.length === 0" class="empty">
-      <p>Команд пока нет</p>
-    </div>
-
-    <div
-      v-for="team in teams"
-      v-else
-      :key="team.id"
-      class="team-item"
-      :class="{ 'team-item--active': team.isActive }"
-    >
-      <div class="team-item__header">
-        <span class="team-item__name">{{ team.name }}</span>
-        <span
-          class="team-item__status"
-          :class="team.isActive ? 'team-item__status--active' : 'team-item__status--inactive'"
+      <template v-else>
+        <div
+          v-for="team in teams"
+          :key="team.id"
+          class="team-item"
+          :class="{ 'team-item--active': team.isActive }"
         >
-          {{ team.isActive ? 'Активная' : 'Неактивная' }}
-        </span>
-      </div>
-      <p class="team-item__role">Роль: {{ team.role }}</p>
-      <div class="team-item__stats">
-        <div class="team-stat">
-          <span class="team-stat__value">{{ team.winCount }}</span>
-          <span class="team-stat__label">побед</span>
+          <div class="team-item__header">
+            <span class="team-item__name">{{ team.name }}</span>
+            <span
+              class="team-item__status"
+              :class="team.isActive ? 'team-item__status--active' : 'team-item__status--inactive'"
+            >
+              {{ team.isActive ? 'Активная' : 'Неактивная' }}
+            </span>
+          </div>
+          <p class="team-item__role">Роль: {{ team.role }}</p>
+          <div class="team-item__stats">
+            <div class="team-stat">
+              <span class="team-stat__value">{{ team.winCount }}</span>
+              <span class="team-stat__label">побед</span>
+            </div>
+            <div class="team-stat">
+              <span class="team-stat__value">{{ team.memberCount }}</span>
+              <span class="team-stat__label">участников</span>
+            </div>
+          </div>
+          <button class="team-item__link" @click="emit('navigate-to-team', team.id)">
+            Профиль команды →
+          </button>
         </div>
-        <div class="team-stat">
-          <span class="team-stat__value">{{ team.memberCount }}</span>
-          <span class="team-stat__label">участников</span>
-        </div>
-      </div>
-      <button class="team-item__link" @click="emit('navigate-to-team', team.id)">
-        Профиль команды →
-      </button>
+      </template>
     </div>
   </div>
 </template>
@@ -66,6 +69,20 @@
 <style scoped lang="scss">
   .card {
     @include flex-column(12px);
+
+    @include respond-to('lg') {
+      gap: 16px;
+    }
+  }
+
+  .teams-grid {
+    @include flex-column(12px);
+
+    @include respond-to('lg') {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
   }
 
   .card__header {
@@ -90,6 +107,7 @@
 
     &--active {
       border-color: $color-accent;
+      border-top-width: 3px;
     }
 
     &--skeleton {
@@ -187,5 +205,9 @@
     text-align: center;
     color: $color-text-secondary;
     font-size: 14px;
+
+    @include respond-to('lg') {
+      grid-column: 1 / -1;
+    }
   }
 </style>

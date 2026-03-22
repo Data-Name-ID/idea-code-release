@@ -243,6 +243,14 @@
 
   .form {
     @include flex-column;
+
+    @include respond-to('lg') {
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 32px 64px;
+      gap: 24px;
+    }
   }
 
   .form__error {
@@ -253,12 +261,23 @@
     border: 1px solid rgba($color-danger, 0.4);
     color: #f87171;
     font-size: 14px;
+
+    @include respond-to('lg') {
+      margin: 0;
+    }
   }
 
   .section {
     padding: 20px 16px;
     @include flex-column(12px);
     border-bottom: 1px solid $color-border;
+
+    @include respond-to('lg') {
+      padding: 28px 32px;
+      background: #141417;
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+    }
   }
 
   .section__title {
@@ -429,6 +448,10 @@
     &:disabled {
       opacity: 0.5;
       cursor: wait;
+    }
+
+    @include respond-to('lg') {
+      margin: 0;
     }
   }
 </style>

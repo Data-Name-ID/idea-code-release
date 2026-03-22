@@ -64,28 +64,34 @@
     </div>
 
     <template v-else-if="user">
-      <UserProfileCard :user="user" />
+      <div class="profile-body">
+        <aside class="profile-sidebar">
+          <div class="sidebar-card">
+            <UserProfileCard :user="user" />
+          </div>
+          <div class="sidebar-section">
+            <SpecializationCard :roles="user.roles" :skills="user.skills" />
+          </div>
+        </aside>
 
-      <div class="section">
-        <ActivityFeed
-          :items="activityItems"
-          :is-loading="isLoadingActivity"
-          :active-filter="activityFilter"
-          @filter-change="activityFilter = $event"
-          @navigate-to-event="(id) => $router.push(`/events/${id}`)"
-        />
-      </div>
-
-      <div class="section">
-        <SpecializationCard :roles="user.roles" :skills="user.skills" />
-      </div>
-
-      <div class="section">
-        <TeamsCard
-          :teams="teams"
-          :is-loading="isLoadingTeams"
-          @navigate-to-team="(id) => $router.push(`/teams/${id}`)"
-        />
+        <main class="profile-main">
+          <div class="main-section">
+            <ActivityFeed
+              :items="activityItems"
+              :is-loading="isLoadingActivity"
+              :active-filter="activityFilter"
+              @filter-change="activityFilter = $event"
+              @navigate-to-event="(id) => $router.push(`/events/${id}`)"
+            />
+          </div>
+          <div class="main-section">
+            <TeamsCard
+              :teams="teams"
+              :is-loading="isLoadingTeams"
+              @navigate-to-team="(id) => $router.push(`/teams/${id}`)"
+            />
+          </div>
+        </main>
       </div>
     </template>
   </div>
@@ -109,9 +115,69 @@
     @include back-button;
   }
 
-  .section {
-    padding: 0 16px;
-    margin-top: 20px;
+  .profile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px 16px 48px;
+
+    @include respond-to('lg') {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 32px 64px;
+    }
+  }
+
+  .profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    @include respond-to('lg') {
+      width: 320px;
+      flex-shrink: 0;
+      gap: 16px;
+    }
+  }
+
+  .sidebar-card {
+    @include respond-to('lg') {
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+      background: #141417;
+    }
+  }
+
+  .sidebar-section {
+    @include respond-to('lg') {
+      background: #1a1a1d;
+      border: 1px solid rgba($color-accent, 0.2);
+      border-radius: $radius-2xl;
+    }
+  }
+
+  .profile-main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+
+    @include respond-to('lg') {
+      flex: 1;
+      gap: 24px;
+    }
+  }
+
+  .main-section {
+    @include respond-to('lg') {
+      background: #141417;
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+      padding: 28px 32px;
+    }
   }
 
   .profile-skeleton {

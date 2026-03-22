@@ -101,6 +101,11 @@
     @include flex-column(12px);
     align-items: center;
     padding: 24px 16px 28px;
+
+    @include respond-to('lg') {
+      align-items: flex-start;
+      padding: 20px 20px 24px;
+    }
   }
 
   .avatar-wrap {
@@ -129,6 +134,10 @@
     font-size: 22px;
     font-weight: 700;
     text-align: center;
+
+    @include respond-to('lg') {
+      text-align: left;
+    }
   }
 
   .description {
@@ -137,12 +146,20 @@
     color: $color-text-secondary;
     text-align: center;
     line-height: 1.5;
+
+    @include respond-to('lg') {
+      text-align: left;
+    }
   }
 
   .stats {
     display: flex;
     gap: 8px;
     margin-top: 4px;
+
+    @include respond-to('lg') {
+      width: 100%;
+    }
   }
 
   .stat {
@@ -152,6 +169,11 @@
     border: 1px solid $color-border;
     border-radius: $radius-lg;
     min-width: 72px;
+
+    @include respond-to('lg') {
+      flex: 1;
+      min-width: 0;
+    }
 
     &--accent .stat__value {
       color: $color-accent;
@@ -198,6 +220,7 @@
     border-top: 1px solid $color-border;
     @include flex-column(12px);
     margin-top: 4px;
+    align-self: stretch;
   }
 
   .contacts__label {
