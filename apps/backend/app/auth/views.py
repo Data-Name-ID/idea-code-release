@@ -9,8 +9,6 @@ from litestar.exceptions import (
 
 from app.auth.schemas import (
     AuthUserData,
-    DevAuthByTelegramIdRequest,
-    DevAuthByTelegramIdResponse,
     RefreshRequest,
     RefreshResponse,
     TelegramConfigData,
@@ -116,40 +114,6 @@ class AuthController(Controller):
         return RefreshResponse(
             access_token=access_token,
             expires_in=int(config.token_expiration.total_seconds()),
-        )
-
-    @post(
-        path="dev/telegram/token",
-        status_code=status_codes.HTTP_200_OK,
-        exclude_from_auth=True,
-    )
-    async def dev_telegram_token(
-        self,
-        store: Store,
-        request: Request,
-        data: DevAuthByTelegramIdRequest,
-    ) -> OkResponse[DevAuthByTelegramIdResponse]:
-        if not store.config.security.dev_auth_by_tg_id_enabled:
-            raise NotFoundException(
-                detail=store.config.security.dev_auth_by_tg_id_enabled,
-            )
-
-        user = await store.users.get_auth_user_by_telegram_user_id(
-            telegram_user_id=data.telegram_user_id,
-        )
-        if user is None:
-            raise NotFoundException(detail="Telegram identity not found")
-
-        jwt_auth = cast("JWTCookieAuth[Any]", request.app.state["jwt_auth"])
-        access_token = jwt_auth.create_token(
-            identifier=str(user.id),
-            token_extras={"type": ACCESS_TOKEN_TYPE},
-        )
-        return OkResponse(
-            data=DevAuthByTelegramIdResponse(
-                access_token=access_token,
-                expires_in=int(store.config.security.jwt.token_expiration.total_seconds()),
-            ),
         )
 
     # ── Common ──

@@ -84,7 +84,6 @@ class SecurityConfig(msgspec.Struct, kw_only=True, frozen=True):
     jwt: JWTConfig
     telegram: TelegramConfig = msgspec.field(default_factory=TelegramConfig)
     cookie: CookieConfig = msgspec.field(default_factory=CookieConfig)
-    dev_auth_by_tg_id_enabled: bool = False
 
 
 class Config(msgspec.Struct, kw_only=True, frozen=True):

@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TC003
+from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 
 from msgspec import Struct
 
 if TYPE_CHECKING:
     from app.events.models import EventModel, EventRatingModel
+
+
+class EventRatingStatus(StrEnum):
+    WINNER = "winner"
+    PRIZE_WINNER = "prize_winner"
+    PARTICIPANT = "participant"
 
 
 class EventResponse(Struct, kw_only=True):
@@ -54,7 +61,7 @@ class EventUpdateRequest(Struct, kw_only=True):
 
 class EventRatingEntryResponse(Struct, kw_only=True):
     user_id: int
-    status: str
+    status: EventRatingStatus
     team_id: int | None = None
     awarded_at: datetime | None = None
 
@@ -62,7 +69,7 @@ class EventRatingEntryResponse(Struct, kw_only=True):
     def from_model(cls, model: EventRatingModel) -> Self:
         return cls(
             user_id=model.user_id,
-            status=model.status,
+            status=EventRatingStatus(model.status),
             team_id=model.team_id,
             awarded_at=model.awarded_at,
         )
@@ -75,5 +82,5 @@ class EventRatingResponse(Struct, kw_only=True):
 
 class EventRatingCreateRequest(Struct, kw_only=True):
     user_id: int
-    status: str
+    status: EventRatingStatus
     team_id: int | None = None

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.functions import func
 
@@ -38,6 +38,12 @@ class EventModel(IDMixin, CreatedAtMixin, UpdatedAtMixin, BaseModel):
 
 class EventRatingModel(BaseModel):
     __tablename__ = "event_ratings"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('winner', 'prize_winner', 'participant')",
+            name="status_allowed",
+        ),
+    )
 
     event_id: Mapped[int] = mapped_column(
         ForeignKey("events.id", ondelete="CASCADE"),
@@ -54,7 +60,7 @@ class EventRatingModel(BaseModel):
     )
 
     team_id: Mapped[int | None] = mapped_column(
-        Integer,
+        ForeignKey("teams.id", ondelete="SET NULL"),
         nullable=True,
         default=None,
     )

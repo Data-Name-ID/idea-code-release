@@ -24,10 +24,6 @@ class TelegramConfigData(Struct, kw_only=True):
     bot_username: str
 
 
-class DevAuthByTelegramIdRequest(Struct, kw_only=True):
-    telegram_user_id: int
-
-
 class AuthUserData(Struct, kw_only=True):
     id: int
     telegram_user_id: int
@@ -53,12 +49,6 @@ class RefreshRequest(Struct, kw_only=True):
 
 
 class RefreshResponse(Struct, kw_only=True):
-    access_token: str
-    token_type: str = "Bearer"  # noqa: S105
-    expires_in: int
-
-
-class DevAuthByTelegramIdResponse(Struct, kw_only=True):
     access_token: str
     token_type: str = "Bearer"  # noqa: S105
     expires_in: int

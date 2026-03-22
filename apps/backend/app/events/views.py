@@ -8,6 +8,7 @@ from app.events.schemas import (
     EventRatingCreateRequest,
     EventRatingEntryResponse,
     EventRatingResponse,
+    EventRatingStatus,
     EventResponse,
     EventUpdateRequest,
 )
@@ -80,8 +81,16 @@ class EventController(Controller):
             raise NotFoundException(detail="Event not found")
 
     @get(path="/{event_id:int}/ratings", exclude_from_auth=True)
-    async def get_ratings(self, store: Store, event_id: int) -> EventRatingResponse:
-        ratings = await store.events.get_event_ratings(event_id)
+    async def get_ratings(
+        self,
+        store: Store,
+        event_id: int,
+        status: EventRatingStatus | None = None,
+    ) -> EventRatingResponse:
+        ratings = await store.events.get_event_ratings(
+            event_id,
+            status=status.value if status is not None else None,
+        )
         if ratings is None:
             raise NotFoundException(detail="Event not found")
 

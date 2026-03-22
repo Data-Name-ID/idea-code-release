@@ -91,9 +91,14 @@ class EventAccessor(BaseAccessor):
     async def get_event_ratings(
         self,
         event_id: int,
+        *,
+        status: str | None = None,
     ) -> list[EventRatingModel] | None:
+        stmt = select(EventRatingModel).where(EventRatingModel.event_id == event_id)
+        if status is not None:
+            stmt = stmt.where(EventRatingModel.status == status)
         ratings_result = await self.store.db.scalars(
-            select(EventRatingModel).where(EventRatingModel.event_id == event_id),
+            stmt,
         )
         ratings = list(ratings_result.all())
         if ratings:
