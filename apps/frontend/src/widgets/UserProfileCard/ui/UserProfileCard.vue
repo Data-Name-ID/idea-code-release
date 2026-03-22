@@ -9,8 +9,6 @@
     rank?: number | null
   }>()
 
-  const displayRoles = computed(() => props.user.roles.map((r) => r.name).join(' · '))
-
   const hasStats = computed(
     () => props.hackathonCount != null || props.winCount != null || props.rank != null,
   )

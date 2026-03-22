@@ -13,6 +13,18 @@ export interface LinkRequest {
   label: string
 }
 
+export interface OkResponse<T> {
+  status: string
+  data: T | null
+}
+
+export interface PaginatedResponse<T> {
+  total: number
+  limit: number
+  offset: number
+  data: T[]
+}
+
 // ─── Roles & Skills ───────────────────────────────────────
 
 export interface RoleResponse {

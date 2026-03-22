@@ -36,13 +36,6 @@ class EventResponse(Struct, kw_only=True):
         )
 
 
-class EventListResponse(Struct, kw_only=True):
-    total: int
-    limit: int
-    offset: int
-    data: list[EventResponse]
-
-
 class EventCreateRequest(Struct, kw_only=True):
     title: str
     description: str = ""

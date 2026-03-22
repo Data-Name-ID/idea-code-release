@@ -1,6 +1,9 @@
 import { apiFetch } from '@shared/api/client'
-import type { SkillResponse } from '@shared/types/api'
+import type { PaginatedResponse, SkillResponse } from '@shared/types/api'
 
 export const skillApi = {
-  getList: () => apiFetch<SkillResponse[]>('/api/skills/'),
+  getList: async (): Promise<SkillResponse[]> => {
+    const response = await apiFetch<PaginatedResponse<SkillResponse> | SkillResponse[]>('/api/skills/')
+    return Array.isArray(response) ? response : response.data
+  },
 }

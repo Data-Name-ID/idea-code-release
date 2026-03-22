@@ -1,6 +1,9 @@
 import { apiFetch } from '@shared/api/client'
-import type { RoleResponse } from '@shared/types/api'
+import type { PaginatedResponse, RoleResponse } from '@shared/types/api'
 
 export const roleApi = {
-  getList: () => apiFetch<RoleResponse[]>('/api/roles/'),
+  getList: async (): Promise<RoleResponse[]> => {
+    const response = await apiFetch<PaginatedResponse<RoleResponse> | RoleResponse[]>('/api/roles/')
+    return Array.isArray(response) ? response : response.data
+  },
 }

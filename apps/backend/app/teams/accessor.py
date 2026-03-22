@@ -1,7 +1,12 @@
-from sqlalchemy import Select, delete, func, insert, select, update
-from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy import Select, delete, insert, select, update
 from sqlalchemy.orm import selectinload
 
+from app.core.accessor_utils import (
+    build_ilike_pattern,
+    collect_defined_values,
+    paginate_by_id,
+    replace_m2m_relations,
+)
 from app.core.accessors import BaseAccessor
 from app.core.db import with_transaction
 from app.events.models import EventModel, EventRatingModel
@@ -24,25 +29,14 @@ class TeamAccessor(BaseAccessor):
             event_id=event_id,
             user_id=user_id,
         )
-        total = int(
-            await self.store.db.scalar_one(
-                select(func.count()).select_from(filtered_team_ids.subquery()),
-            ),
+        return await paginate_by_id(
+            db=self.store.db,
+            ids_stmt=filtered_team_ids,
+            model=TeamModel,
+            model_id=TeamModel.id,
+            limit=limit,
+            offset=offset,
         )
-        if total == 0:
-            return [], 0
-
-        page_team_ids = (
-            filtered_team_ids.order_by(TeamModel.id).offset(offset).limit(limit).subquery()
-        )
-        teams = (
-            await self.store.db.scalars(
-                select(TeamModel)
-                .join(page_team_ids, TeamModel.id == page_team_ids.c.id)
-                .order_by(TeamModel.id),
-            )
-        ).all()
-        return list(teams), total
 
     async def get_team_by_id(self, team_id: int) -> TeamModel | None:
         return await self.store.db.scalar(
@@ -90,7 +84,7 @@ class TeamAccessor(BaseAccessor):
         description: str | None = None,
         user_ids: list[int] | None = None,
     ) -> TeamModel | None:
-        values = self._collect_scalar_values(
+        values = collect_defined_values(
             name=name,
             description=description,
         )
@@ -116,14 +110,6 @@ class TeamAccessor(BaseAccessor):
         )
         return result.rowcount > 0
 
-    @staticmethod
-    def _collect_scalar_values(**kwargs: object) -> dict[str, object]:
-        return {field: value for field, value in kwargs.items() if value is not None}
-
-    @staticmethod
-    def _build_team_search_pattern(search: str) -> str:
-        return f"%{search}%"
-
     def _build_filtered_team_ids_stmt(
         self,
         *,
@@ -134,7 +120,7 @@ class TeamAccessor(BaseAccessor):
         stmt = select(TeamModel.id)
 
         if search:
-            pattern = self._build_team_search_pattern(search)
+            pattern = build_ilike_pattern(search)
             stmt = stmt.where(
                 TeamModel.name.ilike(pattern) | TeamModel.description.ilike(pattern),
             )
@@ -161,27 +147,12 @@ class TeamAccessor(BaseAccessor):
         if user_ids is None:
             return
 
-        db = self.store.db
-        await db.execute(delete(team_users).where(team_users.c.team_id == team_id))
-        if not user_ids:
-            return
-
-        user_result = await db.scalars(
-            select(UserModel.id).where(UserModel.id.in_(user_ids)),
-        )
-        user_values = [
-            {"team_id": team_id, "user_id": user_id} for user_id in user_result.all()
-        ]
-        if not user_values:
-            return
-
-        await db.execute(
-            pg_insert(team_users)
-            .values(user_values)
-            .on_conflict_do_nothing(
-                index_elements=[
-                    team_users.c.team_id,
-                    team_users.c.user_id,
-                ],
-            ),
+        await replace_m2m_relations(
+            db=self.store.db,
+            relation_table=team_users,
+            owner_column=team_users.c.team_id,
+            related_column=team_users.c.user_id,
+            owner_id=team_id,
+            related_ids=user_ids,
+            related_ids_stmt=select(UserModel.id).where(UserModel.id.in_(user_ids)),
         )

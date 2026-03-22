@@ -1,5 +1,5 @@
 import type { AuthUser, TelegramWidgetUser } from './types'
-import type { AuthResponse } from '@shared/types/api'
+import type { AuthResponse, OkResponse } from '@shared/types/api'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
@@ -16,19 +16,13 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
-// Fetch wrapper for endpoints returning OkResponse<T> envelope (Telegram login/config)
-interface OkEnvelope<T> {
-  status: string
-  data: T | null
-}
-
 async function fetchOk<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
     ...options,
   })
-  const body = (await response.json()) as OkEnvelope<T>
+  const body = (await response.json()) as OkResponse<T>
   if (!response.ok || body.status !== 'ok' || body.data === null) {
     throw new Error(`Request failed with status ${response.status}`)
   }
@@ -81,7 +75,6 @@ export async function registerWithPassword(
 
 // ── Common ────────────────────────────────────────────────
 
-// /api/auth/me returns UserResponse directly (no OkResponse wrapper)
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
   const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
     method: 'GET',
@@ -89,7 +82,11 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
   })
   if (response.status === 401) return null
   if (!response.ok) return null
-  return response.json() as Promise<AuthUser>
+  const body = (await response.json()) as OkResponse<AuthUser> | AuthUser
+  if (typeof body === 'object' && body !== null && 'status' in body && 'data' in body) {
+    return body.status === 'ok' ? body.data : null
+  }
+  return body as AuthUser
 }
 
 export async function logout(): Promise<void> {

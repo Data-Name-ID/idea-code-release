@@ -49,13 +49,6 @@ class TeamResponse(Struct, kw_only=True):
         )
 
 
-class TeamListResponse(Struct, kw_only=True):
-    total: int
-    limit: int
-    offset: int
-    data: list[TeamShortResponse]
-
-
 class TeamCreateRequest(Struct, kw_only=True):
     name: str
     description: str = ""

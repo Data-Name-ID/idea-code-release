@@ -121,13 +121,6 @@ class UserShortResponse(Struct, kw_only=True):
         )
 
 
-class UserListResponse(Struct, kw_only=True):
-    total: int
-    limit: int
-    offset: int
-    data: list[UserShortResponse]
-
-
 class UserCreateRequest(Struct, kw_only=True):
     username: str
     email: str | None = None
