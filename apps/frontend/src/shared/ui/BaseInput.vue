@@ -41,5 +41,6 @@
   .base-field {
     width: 100%;
     @include field-control;
+    min-height: 40px;
   }
 </style>

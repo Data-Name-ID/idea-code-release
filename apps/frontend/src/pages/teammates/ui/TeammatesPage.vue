@@ -9,6 +9,7 @@
     BaseButton,
     BaseCard,
     BaseCheckbox,
+    BaseFilterPanel,
     BaseInput,
     BaseSelect,
     BaseStatusMessage,
@@ -27,6 +28,7 @@
     offset: 0,
   })
 
+  const isFiltersOpen = ref(false)
   const users = ref<UserShortResponse[]>([])
   const total = ref(0)
   const isLoading = ref(false)
@@ -68,8 +70,9 @@
     }
   }
 
-  function submitSearch(): void {
+  function applyFilters(): void {
     filters.offset = 0
+    isFiltersOpen.value = false
     void loadUsers()
   }
 
@@ -107,61 +110,14 @@
 
 <template>
   <div class="teammates-page">
-    <div class="edit-bar">
-      <div class="edit-bar__inner">
-        <RouterLink :to="{ name: 'profile' }" class="edit-link">Профиль</RouterLink>
-        <RouterLink :to="{ name: 'teammates' }" class="edit-link">Сокомандники</RouterLink>
-        <RouterLink :to="{ name: 'applications' }" class="edit-link">Заявки</RouterLink>
-      </div>
-    </div>
-
     <div class="teammates-body">
-      <aside class="teammates-sidebar">
-        <section class="sidebar-section">
-          <h1 class="section-title">Поиск сокомандников</h1>
-
-          <form class="filters" @submit.prevent="submitSearch">
-            <BaseInput
-              v-model="filters.search"
-              type="text"
-              placeholder="Имя, username, о себе"
-              :disabled="isLoading"
-            />
-            <BaseInput
-              v-model="filters.location"
-              type="text"
-              placeholder="Город"
-              :disabled="isLoading"
-            />
-
-            <BaseSelect v-model="filters.roleId" :disabled="isLoading">
-              <option value="">Любая роль</option>
-              <option v-for="role in allRoles" :key="role.id" :value="String(role.id)">{{ role.name }}</option>
-            </BaseSelect>
-
-            <BaseSelect v-model="filters.skillId" :disabled="isLoading">
-              <option value="">Любой навык</option>
-              <option v-for="skill in allSkills" :key="skill.id" :value="String(skill.id)">{{ skill.name }}</option>
-            </BaseSelect>
-
-            <BaseCheckbox v-model="filters.openToTeamup" :disabled="isLoading">
-              Только открытые к поиску команды
-            </BaseCheckbox>
-
-            <div class="filter-actions">
-              <BaseButton type="submit" :loading="isLoading">
-                {{ isLoading ? 'Ищем…' : 'Искать' }}
-              </BaseButton>
-              <BaseButton type="button" variant="ghost" :disabled="isLoading" @click="resetFilters">
-                Сброс
-              </BaseButton>
-            </div>
-          </form>
-        </section>
-      </aside>
-
       <main class="teammates-main">
         <section class="main-section">
+          <div class="section-head">
+            <h1 class="section-title">Сокомандники</h1>
+            <BaseButton type="button" variant="ghost" @click="isFiltersOpen = true">Фильтры</BaseButton>
+          </div>
+
           <BaseStatusMessage v-if="error" tone="error">{{ error }}</BaseStatusMessage>
           <p v-else class="summary">Показаны {{ pageFrom }}-{{ pageTo }} из {{ total }}</p>
 
@@ -201,6 +157,46 @@
         </section>
       </main>
     </div>
+
+    <BaseFilterPanel v-model="isFiltersOpen" title="Фильтры поиска">
+      <form class="filters" @submit.prevent="applyFilters">
+        <BaseInput
+          v-model="filters.search"
+          type="text"
+          placeholder="Имя, username, о себе"
+          :disabled="isLoading"
+        />
+        <BaseInput
+          v-model="filters.location"
+          type="text"
+          placeholder="Город"
+          :disabled="isLoading"
+        />
+
+        <BaseSelect v-model="filters.roleId" :disabled="isLoading">
+          <option value="">Любая роль</option>
+          <option v-for="role in allRoles" :key="role.id" :value="String(role.id)">{{ role.name }}</option>
+        </BaseSelect>
+
+        <BaseSelect v-model="filters.skillId" :disabled="isLoading">
+          <option value="">Любой навык</option>
+          <option v-for="skill in allSkills" :key="skill.id" :value="String(skill.id)">{{ skill.name }}</option>
+        </BaseSelect>
+
+        <BaseCheckbox v-model="filters.openToTeamup" :disabled="isLoading">
+          Только открытые к поиску команды
+        </BaseCheckbox>
+
+        <div class="filter-actions">
+          <BaseButton type="submit" :loading="isLoading" block>
+            {{ isLoading ? 'Ищем…' : 'Применить фильтры' }}
+          </BaseButton>
+          <BaseButton type="button" variant="ghost" :disabled="isLoading" block @click="resetFilters">
+            Сбросить
+          </BaseButton>
+        </div>
+      </form>
+    </BaseFilterPanel>
   </div>
 </template>
 
@@ -209,67 +205,31 @@
     @include page-root;
   }
 
-  .edit-bar {
-    @include top-links-bar;
-  }
-
-  .edit-bar__inner {
-    @include top-links-inner;
-  }
-
-  .edit-link {
-    @include top-link-pill;
-  }
-
   .teammates-body {
-    @include page-content-shell;
-  }
-
-  .teammates-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: $space-4 $space-4 56px;
 
     @include respond-to('lg') {
-      width: 320px;
-      flex-shrink: 0;
-      gap: 16px;
-    }
-  }
-
-  .sidebar-section {
-    @include panel-surface($accent: true);
-    padding: $space-5;
-  }
-
-  .section-title {
-    margin: 0 0 14px;
-    font-size: 18px;
-    line-height: 1.25;
-  }
-
-  .filters {
-    display: grid;
-    gap: 10px;
-  }
-
-  .filter-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .teammates-main {
-    min-width: 0;
-
-    @include respond-to('lg') {
-      flex: 1;
+      padding: $space-8 $space-8 64px;
     }
   }
 
   .main-section {
     @include section-panel;
     display: grid;
-    gap: 12px;
+    gap: $space-3;
+  }
+
+  .section-head {
+    @include flex-between;
+    gap: $space-3;
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
   }
 
   .summary {
@@ -280,13 +240,13 @@
   .state {
     border: 1px dashed $color-border;
     border-radius: $radius-md;
-    padding: 16px;
+    padding: $space-4;
     color: $color-text-secondary;
   }
 
   .grid {
     display: grid;
-    gap: 12px;
+    gap: $space-3;
 
     @include respond-to('lg') {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -324,7 +284,18 @@
 
   .pager {
     display: flex;
-    gap: 8px;
+    gap: $space-2;
     justify-content: flex-end;
+  }
+
+  .filters {
+    display: grid;
+    gap: $space-3;
+  }
+
+  .filter-actions {
+    display: grid;
+    gap: $space-2;
+    margin-top: $space-1;
   }
 </style>

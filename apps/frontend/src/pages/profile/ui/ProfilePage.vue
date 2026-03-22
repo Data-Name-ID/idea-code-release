@@ -3,6 +3,7 @@
 
   import { authState } from '@shared/auth/session'
   import { useUserActivity } from '@shared/composables/useUserActivity'
+  import { BaseButton } from '@shared/ui'
   import type { ActivityFilter } from '@widgets/ActivityFeed/model/types'
 
   import UserProfileCard from '@widgets/UserProfileCard/ui/UserProfileCard.vue'
@@ -37,25 +38,11 @@
     </div>
 
     <template v-else-if="user">
-      <div class="edit-bar">
-        <div class="edit-bar__inner">
-          <RouterLink :to="{ name: 'teammates' }" class="edit-link">
-            Сокомандники
-          </RouterLink>
-          <RouterLink :to="{ name: 'applications' }" class="edit-link">
-            Заявки
-          </RouterLink>
-          <RouterLink :to="{ name: 'profile-edit' }" class="edit-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-            </svg>
-            Редактировать
-          </RouterLink>
-        </div>
-      </div>
-
       <div class="profile-body">
         <aside class="profile-sidebar">
+          <RouterLink :to="{ name: 'profile-edit' }" class="profile-edit-link">
+            <BaseButton type="button" variant="ghost" block>Редактировать профиль</BaseButton>
+          </RouterLink>
           <div class="sidebar-card">
             <UserProfileCard :user="user" />
           </div>
@@ -92,22 +79,6 @@
     @include page-root;
   }
 
-  // ─── Edit bar ────────────────────────────────────────────────────────────────
-
-  .edit-bar {
-    @include top-links-bar;
-  }
-
-  .edit-bar__inner {
-    @include top-links-inner;
-  }
-
-  .edit-link {
-    @include top-link-pill;
-  }
-
-  // ─── Body layout ─────────────────────────────────────────────────────────────
-
   .profile-body {
     @include page-content-shell;
   }
@@ -124,6 +95,10 @@
       flex-shrink: 0;
       gap: 16px;
     }
+  }
+
+  .profile-edit-link {
+    text-decoration: none;
   }
 
   .sidebar-card {

@@ -12,6 +12,7 @@
     BaseButton,
     BaseCard,
     BaseCheckbox,
+    BaseFilterPanel,
     BaseSelect,
     BaseStatusMessage,
     BaseTextarea,
@@ -39,6 +40,7 @@
   const total = ref(0)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const isFiltersOpen = ref(false)
 
   const createForm = reactive({
     eventId: route.query.event_id ? String(route.query.event_id) : '',
@@ -128,10 +130,7 @@
     }
   }
 
-  async function updateStatus(
-    item: ParticipationApplicationResponse,
-    status: ApplicationStatus,
-  ): Promise<void> {
+  async function updateStatus(item: ParticipationApplicationResponse, status: ApplicationStatus): Promise<void> {
     if (item.status === status || isUpdatingId.value === item.id) return
 
     statusError.value = null
@@ -152,7 +151,16 @@
     else createForm.skillIds.splice(index, 1)
   }
 
-  function submitFilters(): void {
+  function applyFilters(): void {
+    filters.offset = 0
+    isFiltersOpen.value = false
+    void loadList()
+  }
+
+  function clearFilters(): void {
+    filters.eventId = undefined
+    filters.status = undefined
+    filters.onlyMine = false
     filters.offset = 0
     void loadList()
   }
@@ -177,159 +185,153 @@
 
 <template>
   <div class="applications-page">
-    <div class="edit-bar">
-      <div class="edit-bar__inner">
-        <RouterLink :to="{ name: 'profile' }" class="edit-link">Профиль</RouterLink>
-        <RouterLink :to="{ name: 'teammates' }" class="edit-link">Сокомандники</RouterLink>
-        <RouterLink :to="{ name: 'applications' }" class="edit-link">Заявки</RouterLink>
-      </div>
-    </div>
-
     <div class="applications-body">
-      <aside class="applications-sidebar">
-        <section class="sidebar-section">
-          <h1 class="section-title">Новая заявка</h1>
+      <section class="create-section">
+        <h1 class="section-title">Новая заявка</h1>
 
-          <div class="form-grid">
-            <BaseSelect v-model="createForm.eventId" :disabled="isCreating">
-              <option value="">Выберите хакатон</option>
-              <option v-for="event in allEvents" :key="event.id" :value="String(event.id)">
-                {{ event.title }} · {{ formatDateLong(event.date) }}
-              </option>
-            </BaseSelect>
+        <div class="form-grid">
+          <BaseSelect v-model="createForm.eventId" :disabled="isCreating">
+            <option value="">Выберите хакатон</option>
+            <option v-for="event in allEvents" :key="event.id" :value="String(event.id)">
+              {{ event.title }} · {{ formatDateLong(event.date) }}
+            </option>
+          </BaseSelect>
 
-            <BaseSelect v-model="createForm.desiredRole" :disabled="isCreating">
-              <option value="">Желаемая роль</option>
-              <option v-for="role in allRoles" :key="role.id" :value="role.name">{{ role.name }}</option>
-            </BaseSelect>
+          <BaseSelect v-model="createForm.desiredRole" :disabled="isCreating">
+            <option value="">Желаемая роль</option>
+            <option v-for="role in allRoles" :key="role.id" :value="role.name">{{ role.name }}</option>
+          </BaseSelect>
 
-            <BaseSelect v-model="createForm.preferredTeamFormat" :disabled="isCreating">
-              <option value="team">Хочу в команду</option>
-              <option value="solo">Рассматриваю solo</option>
-            </BaseSelect>
+          <BaseSelect v-model="createForm.preferredTeamFormat" :disabled="isCreating">
+            <option value="team">Хочу в команду</option>
+            <option value="solo">Рассматриваю solo</option>
+          </BaseSelect>
 
-            <BaseTextarea
-              v-model="createForm.comment"
-              rows="3"
-              placeholder="Комментарий о вашем опыте и ожиданиях"
-              :disabled="isCreating"
-            />
-          </div>
+          <BaseTextarea
+            v-model="createForm.comment"
+            rows="3"
+            placeholder="Комментарий о вашем опыте и ожиданиях"
+            :disabled="isCreating"
+          />
+        </div>
 
-          <div class="chips">
-            <button
-              v-for="skill in allSkills"
-              :key="skill.id"
-              type="button"
-              class="chip"
-              :class="{ 'chip--active': createForm.skillIds.includes(skill.id) }"
-              :disabled="isCreating"
-              @click="toggleSkill(skill.id)"
-            >
-              {{ skill.name }}
-            </button>
-          </div>
+        <div class="chips">
+          <button
+            v-for="skill in allSkills"
+            :key="skill.id"
+            type="button"
+            class="chip"
+            :class="{ 'chip--active': createForm.skillIds.includes(skill.id) }"
+            :disabled="isCreating"
+            @click="toggleSkill(skill.id)"
+          >
+            {{ skill.name }}
+          </button>
+        </div>
 
-          <BaseStatusMessage v-if="createError" tone="error">{{ createError }}</BaseStatusMessage>
+        <BaseStatusMessage v-if="createError" tone="error">{{ createError }}</BaseStatusMessage>
 
-          <BaseButton type="button" :loading="isCreating" @click="createApplication">
-            {{ isCreating ? 'Отправляем…' : 'Оставить заявку' }}
+        <BaseButton type="button" :loading="isCreating" @click="createApplication">
+          {{ isCreating ? 'Отправляем…' : 'Оставить заявку' }}
+        </BaseButton>
+      </section>
+
+      <section class="list-section">
+        <div class="section-head">
+          <h2 class="section-subtitle">Список заявок</h2>
+          <BaseButton type="button" variant="ghost" @click="isFiltersOpen = true">Фильтры</BaseButton>
+        </div>
+
+        <BaseStatusMessage v-if="error" tone="error">{{ error }}</BaseStatusMessage>
+        <p v-else class="summary">Показаны {{ pageFrom }}-{{ pageTo }} из {{ total }}</p>
+
+        <BaseStatusMessage v-if="statusError" tone="error">{{ statusError }}</BaseStatusMessage>
+
+        <section v-if="isLoading" class="state">Загрузка...</section>
+        <section v-else-if="list.length === 0" class="state">Список пуст</section>
+
+        <section v-else class="list">
+          <BaseCard v-for="item in list" :key="item.id" class="card">
+            <div class="row">
+              <strong>#{{ item.id }}</strong>
+              <span class="status" :class="`status--${item.status}`">{{ statusLabels[item.status] }}</span>
+            </div>
+
+            <p class="title">
+              {{ allEvents.find((event) => event.id === item.event_id)?.title ?? 'Event #' + item.event_id }}
+            </p>
+            <p>Кандидат: {{ item.applicant?.name ?? 'User #' + item.applicant_user_id }}</p>
+            <p v-if="item.desired_role">Роль: {{ item.desired_role }}</p>
+            <p>Формат: {{ item.preferred_team_format === 'solo' ? 'Solo' : 'Команда' }}</p>
+            <p v-if="item.comment">{{ item.comment }}</p>
+            <p v-if="item.skills.length" class="meta">
+              Навыки: {{ item.skills.map((skill) => skill.name).join(', ') }}
+            </p>
+
+            <div class="actions">
+              <BaseButton
+                type="button"
+                variant="ghost"
+                :disabled="isLoading || isUpdatingId === item.id"
+                @click="updateStatus(item, 'pending')"
+              >
+                На рассмотрении
+              </BaseButton>
+              <BaseButton
+                type="button"
+                variant="ghost"
+                :disabled="isLoading || isUpdatingId === item.id"
+                @click="updateStatus(item, 'approved')"
+              >
+                Одобрить
+              </BaseButton>
+              <BaseButton
+                type="button"
+                variant="ghost"
+                :disabled="isLoading || isUpdatingId === item.id"
+                @click="updateStatus(item, 'rejected')"
+              >
+                Отклонить
+              </BaseButton>
+            </div>
+          </BaseCard>
+        </section>
+
+        <footer class="pager">
+          <BaseButton type="button" variant="ghost" :disabled="isLoading || !canPrev" @click="prevPage">
+            Назад
           </BaseButton>
-        </section>
-
-        <section class="sidebar-section">
-          <h2 class="section-subtitle">Фильтры списка</h2>
-
-          <div class="form-grid">
-            <BaseSelect v-model="filters.eventId" :disabled="isLoading">
-              <option :value="undefined">Все хакатоны</option>
-              <option v-for="event in allEvents" :key="event.id" :value="event.id">{{ event.title }}</option>
-            </BaseSelect>
-
-            <BaseSelect v-model="filters.status" :disabled="isLoading">
-              <option :value="undefined">Все статусы</option>
-              <option v-for="status in statusOptions" :key="status" :value="status">{{ statusLabels[status] }}</option>
-            </BaseSelect>
-          </div>
-
-          <BaseCheckbox v-model="filters.onlyMine" :disabled="isLoading">
-            Только мои заявки
-          </BaseCheckbox>
-
-          <BaseButton type="button" variant="ghost" :disabled="isLoading" @click="submitFilters">
-            Применить
+          <BaseButton type="button" variant="ghost" :disabled="isLoading || !canNext" @click="nextPage">
+            Вперёд
           </BaseButton>
-        </section>
-      </aside>
-
-      <main class="applications-main">
-        <section class="main-section">
-          <BaseStatusMessage v-if="error" tone="error">{{ error }}</BaseStatusMessage>
-          <p v-else class="summary">Показаны {{ pageFrom }}-{{ pageTo }} из {{ total }}</p>
-
-          <BaseStatusMessage v-if="statusError" tone="error">{{ statusError }}</BaseStatusMessage>
-
-          <section v-if="isLoading" class="state">Загрузка...</section>
-          <section v-else-if="list.length === 0" class="state">Список пуст</section>
-
-          <section v-else class="list">
-            <BaseCard v-for="item in list" :key="item.id" class="card">
-              <div class="row">
-                <strong>#{{ item.id }}</strong>
-                <span class="status" :class="`status--${item.status}`">{{ statusLabels[item.status] }}</span>
-              </div>
-
-              <p class="title">
-                {{ allEvents.find((event) => event.id === item.event_id)?.title ?? 'Event #' + item.event_id }}
-              </p>
-              <p>Кандидат: {{ item.applicant?.name ?? 'User #' + item.applicant_user_id }}</p>
-              <p v-if="item.desired_role">Роль: {{ item.desired_role }}</p>
-              <p>Формат: {{ item.preferred_team_format === 'solo' ? 'Solo' : 'Команда' }}</p>
-              <p v-if="item.comment">{{ item.comment }}</p>
-              <p v-if="item.skills.length" class="meta">
-                Навыки: {{ item.skills.map((skill) => skill.name).join(', ') }}
-              </p>
-
-              <div class="actions">
-                <BaseButton
-                  type="button"
-                  variant="ghost"
-                  :disabled="isLoading || isUpdatingId === item.id"
-                  @click="updateStatus(item, 'pending')"
-                >
-                  На рассмотрении
-                </BaseButton>
-                <BaseButton
-                  type="button"
-                  variant="ghost"
-                  :disabled="isLoading || isUpdatingId === item.id"
-                  @click="updateStatus(item, 'approved')"
-                >
-                  Одобрить
-                </BaseButton>
-                <BaseButton
-                  type="button"
-                  variant="ghost"
-                  :disabled="isLoading || isUpdatingId === item.id"
-                  @click="updateStatus(item, 'rejected')"
-                >
-                  Отклонить
-                </BaseButton>
-              </div>
-            </BaseCard>
-          </section>
-
-          <footer class="pager">
-            <BaseButton type="button" variant="ghost" :disabled="isLoading || !canPrev" @click="prevPage">
-              Назад
-            </BaseButton>
-            <BaseButton type="button" variant="ghost" :disabled="isLoading || !canNext" @click="nextPage">
-              Вперёд
-            </BaseButton>
-          </footer>
-        </section>
-      </main>
+        </footer>
+      </section>
     </div>
+
+    <BaseFilterPanel v-model="isFiltersOpen" title="Фильтры заявок">
+      <form class="filters" @submit.prevent="applyFilters">
+        <BaseSelect v-model="filters.eventId" :disabled="isLoading">
+          <option :value="undefined">Все хакатоны</option>
+          <option v-for="event in allEvents" :key="event.id" :value="event.id">{{ event.title }}</option>
+        </BaseSelect>
+
+        <BaseSelect v-model="filters.status" :disabled="isLoading">
+          <option :value="undefined">Все статусы</option>
+          <option v-for="status in statusOptions" :key="status" :value="status">{{ statusLabels[status] }}</option>
+        </BaseSelect>
+
+        <BaseCheckbox v-model="filters.onlyMine" :disabled="isLoading">
+          Только мои заявки
+        </BaseCheckbox>
+
+        <div class="filter-actions">
+          <BaseButton type="submit" block :loading="isLoading">Применить</BaseButton>
+          <BaseButton type="button" block variant="ghost" :disabled="isLoading" @click="clearFilters">
+            Сбросить
+          </BaseButton>
+        </div>
+      </form>
+    </BaseFilterPanel>
   </div>
 </template>
 
@@ -338,60 +340,51 @@
     @include page-root;
   }
 
-  .edit-bar {
-    @include top-links-bar;
-  }
-
-  .edit-bar__inner {
-    @include top-links-inner;
-  }
-
-  .edit-link {
-    @include top-link-pill;
-  }
-
   .applications-body {
-    @include page-content-shell;
-  }
-
-  .applications-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: $space-4 $space-4 56px;
+    display: grid;
+    gap: $space-4;
 
     @include respond-to('lg') {
-      width: 360px;
-      flex-shrink: 0;
-      gap: 16px;
+      padding: $space-8 $space-8 64px;
+      gap: $space-6;
     }
   }
 
-  .sidebar-section {
-    @include panel-surface($accent: true);
-    padding: 20px;
-    display: grid;
-    gap: 12px;
+  .create-section,
+  .list-section {
+    @include section-panel;
+  }
+
+  .section-head {
+    @include flex-between;
+    gap: $space-3;
   }
 
   .section-title,
   .section-subtitle {
     margin: 0;
-    font-size: 18px;
-    line-height: 1.25;
+    font-weight: 800;
+  }
+
+  .section-title {
+    font-size: 22px;
   }
 
   .section-subtitle {
-    font-size: 16px;
+    font-size: 20px;
   }
 
   .form-grid {
     display: grid;
-    gap: 10px;
+    gap: $space-2;
   }
 
   .chips {
     display: flex;
-    gap: 8px;
+    gap: $space-2;
     flex-wrap: wrap;
   }
 
@@ -411,22 +404,9 @@
   }
 
   .chip--active {
-    border-color: rgba($color-accent, 0.5);
-    background: rgba($color-accent, 0.16);
-  }
-
-  .applications-main {
-    min-width: 0;
-
-    @include respond-to('lg') {
-      flex: 1;
-    }
-  }
-
-  .main-section {
-    @include section-panel;
-    display: grid;
-    gap: 12px;
+    border-color: $color-accent-border;
+    background: $color-accent-soft;
+    color: $color-accent;
   }
 
   .summary {
@@ -437,13 +417,13 @@
   .state {
     border: 1px dashed $color-border;
     border-radius: $radius-md;
-    padding: 16px;
+    padding: $space-4;
     color: $color-text-secondary;
   }
 
   .list {
     display: grid;
-    gap: 12px;
+    gap: $space-3;
   }
 
   .card {
@@ -458,7 +438,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: $space-2;
   }
 
   .title {
@@ -495,13 +475,23 @@
   .actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: $space-2;
     margin-top: 10px;
   }
 
   .pager {
     display: flex;
-    gap: 8px;
+    gap: $space-2;
     justify-content: flex-end;
+  }
+
+  .filters {
+    display: grid;
+    gap: $space-3;
+  }
+
+  .filter-actions {
+    display: grid;
+    gap: $space-2;
   }
 </style>
