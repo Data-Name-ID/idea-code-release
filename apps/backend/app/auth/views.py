@@ -2,10 +2,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from litestar import Controller, Request, Response, get, post, status_codes
 from litestar.datastructures import Cookie
-from litestar.exceptions import (
-    NotAuthorizedException,
-    NotFoundException,
-)
+from litestar.exceptions import NotAuthorizedException
 
 from app.auth.schemas import (
     AuthUserData,
@@ -25,6 +22,7 @@ from app.core.schemas import OkResponse
 from app.core.store import Store
 from app.users.domain import TelegramIdentityInput
 from app.users.schemas import UserResponse
+from app.web.responses import ok, raise_not_found
 
 if TYPE_CHECKING:
     from litestar.security.jwt import JWTCookieAuth
@@ -47,9 +45,7 @@ class AuthController(Controller):
     ) -> OkResponse[TelegramConfigData]:
         telegram_cfg = store.config.security.telegram
         assert_telegram_auth_configured(telegram_cfg)
-        return OkResponse(
-            data=TelegramConfigData(bot_username=telegram_cfg.bot_username),
-        )
+        return ok(TelegramConfigData(bot_username=telegram_cfg.bot_username))
 
     @post(
         path="telegram/login",
@@ -83,7 +79,7 @@ class AuthController(Controller):
         return jwt_auth.login(
             identifier=str(user.id),
             response_status_code=status_codes.HTTP_200_OK,
-            response_body=OkResponse(data=AuthUserData.from_domain(user)),
+            response_body=ok(AuthUserData.from_domain(user)),
         )
 
     @post(path="/refresh", exclude_from_auth=True)
@@ -92,13 +88,13 @@ class AuthController(Controller):
         store: Store,
         request: Request,
         data: RefreshRequest,
-    ) -> RefreshResponse:
+    ) -> OkResponse[RefreshResponse]:
         config = store.config.security.jwt
 
         try:
             token = decode_refresh_token(
                 encoded_token=data.refresh_token,
-                secret=config.token_secret,
+                secret=config.effective_refresh_secret,
             )
         except InvalidRefreshTokenError as exc:
             raise NotAuthorizedException(
@@ -111,9 +107,11 @@ class AuthController(Controller):
             token_extras={"type": ACCESS_TOKEN_TYPE},
         )
 
-        return RefreshResponse(
-            access_token=access_token,
-            expires_in=int(config.token_expiration.total_seconds()),
+        return ok(
+            RefreshResponse(
+                access_token=access_token,
+                expires_in=int(config.token_expiration.total_seconds()),
+            ),
         )
 
     # ── Common ──
@@ -123,12 +121,12 @@ class AuthController(Controller):
         self,
         store: Store,
         request: Request,
-    ) -> UserResponse:
+    ) -> OkResponse[UserResponse]:
         user_id = int(request.user.id)
         user = await store.users.get_user_by_id(user_id)
         if user is None:
-            raise NotFoundException(detail="User not found")
-        return UserResponse.from_model(user)
+            raise_not_found("User")
+        return ok(UserResponse.from_model(user))
 
     @post(path="logout", status_code=status_codes.HTTP_200_OK)
     async def logout(
@@ -147,7 +145,7 @@ class AuthController(Controller):
             samesite=jwt_auth.samesite,
         )
         return Response(
-            content=OkResponse(),
+            content=ok(),
             status_code=status_codes.HTTP_200_OK,
             cookies=[cookie],
         )

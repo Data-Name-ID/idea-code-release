@@ -78,3 +78,29 @@ Telegram-only authentication requires:
 
 - `APP_SECURITY__TELEGRAM__BOT_TOKEN`
 - `APP_SECURITY__TELEGRAM__BOT_USERNAME`
+
+## Organizer Ingest API
+
+Public data import endpoint for organizers:
+
+- `POST /api/public/organizer/import`
+- auth header: `X-API-Key: <plain-token>`
+- one request contains data for exactly one hackathon (`hackathon` object)
+
+Write operations for hackathons/teams/results were moved to this endpoint.
+Legacy write endpoints for `teams/events/ratings` are removed.
+All imported hackathon data is marked verified automatically (`is_verify=true`).
+
+Organizer tokens are stored in DB table `organizer_api_tokens` as SHA-256 hashes.
+To create a token manually:
+
+1. Generate token value.
+2. Compute hash (example):
+   ```bash
+   printf '%s' 'YOUR_TOKEN' | shasum -a 256
+   ```
+3. Insert hash to DB:
+   ```sql
+   INSERT INTO organizer_api_tokens (name, token_hash, is_active, created_at, updated_at)
+   VALUES ('organizer-name', '<sha256-hash>', true, NOW(), NOW());
+   ```

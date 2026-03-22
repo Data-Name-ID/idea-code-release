@@ -1,14 +1,11 @@
+@use 'sass:map';
+
 $breakpoints: (
   'sm': 576px,
   'md': 768px,
   'lg': 1024px,
-  'xl': 1280px,
-  '2xl': 1536px,
 );
 
-/// Mobile-first: min-width
-/// @example
-///   @include respond-to('md') { font-size: 1.25rem; }
 @mixin respond-to($bp) {
   $value: map.get($breakpoints, $bp);
 
@@ -17,41 +14,6 @@ $breakpoints: (
   }
 
   @media (min-width: $value) {
-    @content;
-  }
-}
-
-/// Desktop-first: max-width (breakpoint - 1px)
-/// @example
-///   @include respond-below('md') { display: none; }
-@mixin respond-below($bp) {
-  $value: map.get($breakpoints, $bp);
-
-  @if $value == null {
-    @error 'Unknown breakpoint `#{$bp}`. Available: #{map.keys($breakpoints)}';
-  }
-
-  @media (max-width: ($value - 1px)) {
-    @content;
-  }
-}
-
-/// Range: between two breakpoints
-/// @example
-///   @include respond-between('sm', 'lg') { padding: 1rem; }
-@mixin respond-between($min-bp, $max-bp) {
-  $min: map.get($breakpoints, $min-bp);
-  $max: map.get($breakpoints, $max-bp);
-
-  @if $min == null {
-    @error 'Unknown breakpoint `#{$min-bp}`.';
-  }
-
-  @if $max == null {
-    @error 'Unknown breakpoint `#{$max-bp}`.';
-  }
-
-  @media (min-width: $min) and (max-width: ($max - 1px)) {
     @content;
   }
 }

@@ -4,7 +4,7 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  envPrefix: ['VITE_API_BASE_URL'],
+  envPrefix: 'VITE_',
   plugins: [vue()],
   resolve: {
     alias: {

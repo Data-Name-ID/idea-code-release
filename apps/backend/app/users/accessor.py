@@ -1,15 +1,31 @@
 from datetime import datetime
+from typing import cast
 
-from sqlalchemy import Select, delete, func, insert, select, update
+from sqlalchemy import Select, delete, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
+from app.core.accessor_utils import (
+    build_ilike_pattern,
+    collect_defined_values,
+    paginate_by_id,
+    replace_m2m_relations,
+)
 from app.core.accessors import BaseAccessor
 from app.core.db import with_transaction
 from app.roles.models import RoleModel
 from app.skills.models import SkillModel
 from app.users.domain import AuthUser, LinkData, TelegramIdentityInput
 from app.users.models import TelegramIdentityModel, UserModel, user_roles, user_skills
+
+type AuthUserRow = tuple[
+    int,
+    int,
+    str | None,
+    str,
+    str | None,
+    str | None,
+]
 
 
 class UserAccessor(BaseAccessor):
@@ -84,6 +100,33 @@ class UserAccessor(BaseAccessor):
             .where(UserModel.id == user_id)
         )
         row = await self.store.db.one_or_none(stmt)
+        return self._build_auth_user(cast("AuthUserRow | None", row))
+
+    async def get_auth_user_by_telegram_user_id(
+        self,
+        *,
+        telegram_user_id: int,
+    ) -> AuthUser | None:
+        stmt = (
+            select(
+                UserModel.id.label("id"),
+                TelegramIdentityModel.telegram_user_id.label("telegram_user_id"),
+                TelegramIdentityModel.username.label("username"),
+                TelegramIdentityModel.first_name.label("first_name"),
+                TelegramIdentityModel.last_name.label("last_name"),
+                TelegramIdentityModel.photo_url.label("photo_url"),
+            )
+            .join(
+                TelegramIdentityModel,
+                TelegramIdentityModel.user_id == UserModel.id,
+            )
+            .where(TelegramIdentityModel.telegram_user_id == telegram_user_id)
+        )
+        row = await self.store.db.one_or_none(stmt)
+        return self._build_auth_user(cast("AuthUserRow | None", row))
+
+    @staticmethod
+    def _build_auth_user(row: AuthUserRow | None) -> AuthUser | None:
         if row is None:
             return None
         (
@@ -137,26 +180,14 @@ class UserAccessor(BaseAccessor):
             role_id=role_id,
             skill_id=skill_id,
         )
-        total = int(
-            await self.store.db.scalar_one(
-                select(func.count()).select_from(filtered_user_ids.subquery()),
-            ),
+        return await paginate_by_id(
+            db=self.store.db,
+            ids_stmt=filtered_user_ids,
+            model=UserModel,
+            model_id=UserModel.id,
+            limit=limit,
+            offset=offset,
         )
-        if total == 0:
-            return [], 0
-
-        page_user_ids = (
-            filtered_user_ids.order_by(UserModel.id).offset(offset).limit(limit).subquery()
-        )
-        users = (
-            await self.store.db.scalars(
-                select(UserModel)
-                .join(page_user_ids, UserModel.id == page_user_ids.c.id)
-                .options(selectinload(UserModel.roles), selectinload(UserModel.skills))
-                .order_by(UserModel.id),
-            )
-        ).all()
-        return list(users), total
 
     @with_transaction
     async def create_user(
@@ -206,7 +237,7 @@ class UserAccessor(BaseAccessor):
         role_ids: list[int] | None = None,
         skill_ids: list[int] | None = None,
     ) -> UserModel | None:
-        values = self._collect_scalar_values(
+        values = collect_defined_values(
             name=name,
             email=email,
             avatar=avatar,
@@ -216,9 +247,9 @@ class UserAccessor(BaseAccessor):
         )
         if values:
             updated_user_id = await self.store.db.scalar(
-                update(UserModel)
-                .where(UserModel.id == user_id)
-                .values(**values)
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(**values)
                 .returning(UserModel.id),
             )
             if updated_user_id is None:
@@ -236,14 +267,6 @@ class UserAccessor(BaseAccessor):
         )
         return result.rowcount > 0
 
-    @staticmethod
-    def _collect_scalar_values(**kwargs: object) -> dict[str, object]:
-        return {field: value for field, value in kwargs.items() if value is not None}
-
-    @staticmethod
-    def _build_user_search_pattern(search: str) -> str:
-        return f"%{search}%"
-
     def _build_filtered_user_ids_stmt(
         self,
         *,
@@ -254,7 +277,7 @@ class UserAccessor(BaseAccessor):
         stmt = select(UserModel.id)
 
         if search:
-            pattern = self._build_user_search_pattern(search)
+            pattern = build_ilike_pattern(search)
             stmt = stmt.where(
                 UserModel.name.ilike(pattern) | UserModel.username.ilike(pattern),
             )
@@ -290,47 +313,23 @@ class UserAccessor(BaseAccessor):
 
         db = self.store.db
         if role_ids is not None:
-            await db.execute(delete(user_roles).where(user_roles.c.user_id == user_id))
-            if role_ids:
-                role_result = await db.scalars(
-                    select(RoleModel.id).where(RoleModel.id.in_(role_ids)),
-                )
-                role_values = [
-                    {"user_id": user_id, "role_id": role_id}
-                    for role_id in role_result.all()
-                ]
-                if role_values:
-                    await db.execute(
-                        pg_insert(user_roles)
-                        .values(role_values)
-                        .on_conflict_do_nothing(
-                            index_elements=[
-                                user_roles.c.user_id,
-                                user_roles.c.role_id,
-                            ],
-                        ),
-                    )
+            await replace_m2m_relations(
+                db=db,
+                relation_table=user_roles,
+                owner_column=user_roles.c.user_id,
+                related_column=user_roles.c.role_id,
+                owner_id=user_id,
+                related_ids=role_ids,
+                related_ids_stmt=select(RoleModel.id).where(RoleModel.id.in_(role_ids)),
+            )
 
         if skill_ids is not None:
-            await db.execute(
-                delete(user_skills).where(user_skills.c.user_id == user_id),
+            await replace_m2m_relations(
+                db=db,
+                relation_table=user_skills,
+                owner_column=user_skills.c.user_id,
+                related_column=user_skills.c.skill_id,
+                owner_id=user_id,
+                related_ids=skill_ids,
+                related_ids_stmt=select(SkillModel.id).where(SkillModel.id.in_(skill_ids)),
             )
-            if skill_ids:
-                skill_result = await db.scalars(
-                    select(SkillModel.id).where(SkillModel.id.in_(skill_ids)),
-                )
-                skill_values = [
-                    {"user_id": user_id, "skill_id": skill_id}
-                    for skill_id in skill_result.all()
-                ]
-                if skill_values:
-                    await db.execute(
-                        pg_insert(user_skills)
-                        .values(skill_values)
-                        .on_conflict_do_nothing(
-                            index_elements=[
-                                user_skills.c.user_id,
-                                user_skills.c.skill_id,
-                            ],
-                        ),
-                    )

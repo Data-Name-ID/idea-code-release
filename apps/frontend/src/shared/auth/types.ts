@@ -1,11 +1,7 @@
-export interface AuthUser {
-  id: number
-  telegram_user_id: number
-  username: string | null
-  first_name: string
-  last_name: string | null
-  photo_url: string | null
-}
+import type { UserResponse } from '@shared/types/api'
+
+// Full user profile stored in the session after any successful auth
+export type AuthUser = UserResponse
 
 export interface TelegramWidgetUser {
   id: number

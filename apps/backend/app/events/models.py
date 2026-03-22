@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.functions import func
 
@@ -11,6 +11,13 @@ from app.core.models.mixins import CreatedAtMixin, IDMixin, UpdatedAtMixin
 
 class EventModel(IDMixin, CreatedAtMixin, UpdatedAtMixin, BaseModel):
     __tablename__ = "events"
+
+    external_id: Mapped[str | None] = mapped_column(
+        String(StaticConfig.NAME_STR_LENGTH),
+        unique=True,
+        nullable=True,
+        default=None,
+    )
 
     title: Mapped[str] = mapped_column(String(StaticConfig.NAME_STR_LENGTH))
 
@@ -38,6 +45,13 @@ class EventModel(IDMixin, CreatedAtMixin, UpdatedAtMixin, BaseModel):
 
 class EventRatingModel(BaseModel):
     __tablename__ = "event_ratings"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('winner', 'prize_winner', 'participant')",
+            name="status_allowed",
+        ),
+        CheckConstraint("place IS NULL OR place > 0", name="place_positive"),
+    )
 
     event_id: Mapped[int] = mapped_column(
         ForeignKey("events.id", ondelete="CASCADE"),
@@ -53,8 +67,10 @@ class EventRatingModel(BaseModel):
         String(StaticConfig.SHORT_STR_LENGTH),
     )
 
+    place: Mapped[int | None] = mapped_column(nullable=True, default=None)
+
     team_id: Mapped[int | None] = mapped_column(
-        Integer,
+        ForeignKey("teams.id", ondelete="SET NULL"),
         nullable=True,
         default=None,
     )

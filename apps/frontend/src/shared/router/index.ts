@@ -14,11 +14,52 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    name: 'home',
-    component: () => import('@pages/home/ui/HomePage.vue'),
+    redirect: '/profile',
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@pages/profile/ui/ProfilePage.vue'),
     meta: {
       requiresAuth: true,
     },
+  },
+  {
+    path: '/profile/edit',
+    name: 'profile-edit',
+    component: () => import('@pages/profile-edit/ui/ProfileEditPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/users/:id',
+    name: 'user',
+    component: () => import('@pages/user/ui/UserPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/teams/:id',
+    name: 'team',
+    component: () => import('@pages/team/ui/TeamPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/events/:id',
+    name: 'event',
+    component: () => import('@pages/event/ui/EventPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/organizer/import',
+    name: 'organizer-import',
+    component: () => import('@pages/organizer-import/ui/OrganizerImportPage.vue'),
   },
   {
     path: '/:pathMatch(.*)*',
@@ -47,7 +88,7 @@ router.beforeEach(async (to) => {
   }
 
   if (guestOnly && isAuthenticated) {
-    return { name: 'home' }
+    return { name: 'profile' }
   }
 
   return true
