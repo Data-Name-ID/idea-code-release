@@ -46,7 +46,7 @@ class ObjectStorageService:
         if not file_ext:
             file_ext = ".jpg" if content_type == "image/jpeg" else ".png"
 
-        object_name = f"avatars/user-{user_id}/{uuid4().hex}{file_ext}"
+        object_name = f"user-{user_id}/{uuid4().hex}{file_ext}"
 
         await asyncio.to_thread(
             self._client.put_object,
