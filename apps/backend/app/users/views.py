@@ -1,4 +1,6 @@
-from litestar import Controller, delete, get, post, put, status_codes
+from litestar import Controller, Request, delete, get, post, put, status_codes
+from litestar.datastructures import UploadFile
+from litestar.exceptions import ClientException
 
 from app.core.schemas import OkResponse, PaginatedResponse
 from app.core.store import Store
@@ -108,3 +110,25 @@ class UserController(Controller):
         deleted = await store.users.delete_user(user_id)
         if not deleted:
             raise_not_found("User")
+
+    @post(path="/me/avatar")
+    async def upload_my_avatar(
+        self,
+        store: Store,
+        request: Request,
+    ) -> OkResponse[UserResponse]:
+        form = await request.form()
+        maybe_file = form.get("file")
+        if not isinstance(maybe_file, UploadFile):
+            msg = "Expected multipart form field 'file'"
+            raise ClientException(status_code=400, detail=msg)
+
+        user_id = int(request.user.id)
+        avatar_url = await store.object_storage.upload_avatar(
+            user_id=user_id,
+            upload_file=maybe_file,
+        )
+        user = await store.users.update_user(user_id=user_id, avatar=avatar_url)
+        if user is None:
+            raise_not_found("User")
+        return ok(UserResponse.from_model(user))

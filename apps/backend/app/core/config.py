@@ -86,9 +86,22 @@ class SecurityConfig(msgspec.Struct, kw_only=True, frozen=True):
     cookie: CookieConfig = msgspec.field(default_factory=CookieConfig)
 
 
+class ObjectStorageConfig(msgspec.Struct, kw_only=True, frozen=True):
+    endpoint: str = "localhost:9000"
+    access_key: str = "minioadmin"
+    secret_key: str = "minioadmin"  # noqa: S105
+    secure: bool = False
+    bucket: str = "avatars"
+    public_base_url: str = "http://localhost:9000"
+    max_upload_size_mb: int = 5
+
+
 class Config(msgspec.Struct, kw_only=True, frozen=True):
     db: DatabaseConfig
     security: SecurityConfig
+    object_storage: ObjectStorageConfig = msgspec.field(
+        default_factory=ObjectStorageConfig,
+    )
 
 
 def _lower_keys(data: object) -> object:

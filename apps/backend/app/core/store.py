@@ -1,4 +1,5 @@
 from app.core.config import Config
+from app.core.object_storage import ObjectStorageService
 
 
 class Store:
@@ -8,6 +9,7 @@ class Store:
         from app.core.db import DatabaseAccessor
 
         self.db = DatabaseAccessor(self)
+        self.object_storage = ObjectStorageService(config.object_storage)
 
         from app.events.accessor import EventAccessor
         from app.ingest.accessor import OrganizerIngestAccessor

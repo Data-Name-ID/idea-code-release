@@ -22,4 +22,10 @@ export const userApi = {
   remove: (id: number) => apiFetch<void>(`/api/users/${id}`, { method: 'DELETE' }),
 
   getMe: () => apiFetch<UserResponse>('/api/auth/me'),
+
+  uploadAvatar: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiFetch<UserResponse>('/api/users/me/avatar', { method: 'POST', body: form })
+  },
 }

@@ -9,12 +9,17 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
     return Promise.resolve(resolveMock<T>(path, options))
   }
 
+  const isFormDataBody = options?.body instanceof FormData
+  const headers = isFormDataBody
+    ? { ...(options?.headers ?? {}) }
+    : {
+        'Content-Type': 'application/json',
+        ...(options?.headers ?? {}),
+      }
+
   const response = await fetch(`${apiBaseUrl}${path}`, {
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers ?? {}),
-    },
+    headers,
     ...options,
   })
 

@@ -76,6 +76,9 @@ const routes: RouteRecordRaw[] = [
     path: '/organizer/import',
     name: 'organizer-import',
     component: () => import('@pages/organizer-import/ui/OrganizerImportPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
   },
   {
     path: '/:pathMatch(.*)*',

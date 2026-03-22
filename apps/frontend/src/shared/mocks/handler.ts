@@ -133,6 +133,23 @@ export function resolveMock<T>(path: string, options?: RequestInit): T {
     }
   }
 
+  // POST /api/users/me/avatar
+  if (/^\/api\/users\/me\/avatar\/?$/.test(pathname) && method === 'POST') {
+    const me = users[0]
+    const body = options?.body
+    if (!(body instanceof FormData)) {
+      throw new Error('API 400: Multipart form-data expected')
+    }
+    const file = body.get('file')
+    if (!(file instanceof File)) {
+      throw new Error('API 400: File is required')
+    }
+    const slug = encodeURIComponent(file.name || `avatar-${Date.now()}.png`)
+    me.avatar = `https://mock-storage.local/avatars/${me.id}/${slug}`
+    users[0] = { ...me }
+    return users[0] as T
+  }
+
   // GET /api/events/
   if (/^\/api\/events\/?$/.test(pathname) && method === 'GET') {
     const limit = params.get('limit') ? Number(params.get('limit')) : 20

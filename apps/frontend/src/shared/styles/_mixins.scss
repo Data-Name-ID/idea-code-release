@@ -37,7 +37,7 @@
   background: $color-bg;
   color: $color-text-primary;
   font-family: $font-family-base;
-  padding-bottom: 40px;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }
 
 @mixin sticky-header {

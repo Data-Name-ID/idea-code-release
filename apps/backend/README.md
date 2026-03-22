@@ -79,6 +79,16 @@ Telegram-only authentication requires:
 - `APP_SECURITY__TELEGRAM__BOT_TOKEN`
 - `APP_SECURITY__TELEGRAM__BOT_USERNAME`
 
+Avatar uploads to MinIO require:
+
+- `APP_OBJECT_STORAGE__ENDPOINT`
+- `APP_OBJECT_STORAGE__ACCESS_KEY`
+- `APP_OBJECT_STORAGE__SECRET_KEY`
+- `APP_OBJECT_STORAGE__SECURE`
+- `APP_OBJECT_STORAGE__BUCKET`
+- `APP_OBJECT_STORAGE__PUBLIC_BASE_URL`
+- `APP_OBJECT_STORAGE__MAX_UPLOAD_SIZE_MB`
+
 ## Organizer Ingest API
 
 Public data import endpoint for organizers:

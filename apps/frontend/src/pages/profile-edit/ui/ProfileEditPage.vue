@@ -36,6 +36,17 @@
   const isSaving = ref(false)
   const saveError = ref<string | null>(null)
   const userTeams = ref<TeamShortResponse[]>([])
+  const isUploadingAvatar = ref(false)
+  const avatarUploadError = ref<string | null>(null)
+  const sectionLinks = [
+    { id: 'section-main', label: 'Основное' },
+    { id: 'section-links', label: 'Ссылки' },
+    { id: 'section-roles', label: 'Роли' },
+    { id: 'section-skills', label: 'Навыки' },
+    { id: 'section-teamup', label: 'Поиск команды' },
+    { id: 'section-teams', label: 'Команды' },
+    { id: 'section-events', label: 'Хакатоны' },
+  ] as const
 
   const teamForm = reactive({
     name: '',
@@ -95,6 +106,35 @@
     const idx = list.indexOf(id)
     if (idx === -1) list.push(id)
     else list.splice(idx, 1)
+  }
+
+  function scrollToSection(sectionId: string): void {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  async function handleAvatarSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file || !user.value) return
+
+    avatarUploadError.value = null
+    if (!file.type.startsWith('image/')) {
+      avatarUploadError.value = 'Можно загружать только изображения'
+      input.value = ''
+      return
+    }
+
+    try {
+      isUploadingAvatar.value = true
+      const updated = await userApi.uploadAvatar(file)
+      form.avatar = updated.avatar ?? ''
+      setCurrentUser(updated)
+    } catch (e) {
+      avatarUploadError.value = e instanceof Error ? e.message : 'Не удалось загрузить аватар'
+    } finally {
+      isUploadingAvatar.value = false
+      input.value = ''
+    }
   }
 
   async function handleSubmit(): Promise<void> {
@@ -211,10 +251,22 @@
       </button>
     </header>
 
+    <nav class="section-nav" aria-label="Разделы формы">
+      <button
+        v-for="section in sectionLinks"
+        :key="section.id"
+        type="button"
+        class="section-nav__item"
+        @click="scrollToSection(section.id)"
+      >
+        {{ section.label }}
+      </button>
+    </nav>
+
     <form class="form" @submit.prevent="handleSubmit">
       <p v-if="saveError" class="form__error">{{ saveError }}</p>
 
-      <section class="section">
+      <section id="section-main" class="section">
         <h2 class="section__title">Основное</h2>
 
         <div class="avatar-preview">
@@ -226,6 +278,21 @@
               </svg>
             </div>
           </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label">Загрузка аватара</label>
+          <label class="upload-avatar-btn">
+            <input
+              type="file"
+              accept="image/*"
+              class="upload-avatar-btn__input"
+              :disabled="isUploadingAvatar"
+              @change="handleAvatarSelected"
+            />
+            {{ isUploadingAvatar ? 'Загружаем…' : 'Загрузить файл' }}
+          </label>
+          <p v-if="avatarUploadError" class="form__error upload-error">{{ avatarUploadError }}</p>
         </div>
 
         <div class="field">
@@ -254,7 +321,7 @@
         </div>
       </section>
 
-      <section class="section">
+      <section id="section-links" class="section">
         <h2 class="section__title">Ссылки</h2>
 
         <div v-for="(link, i) in form.links" :key="i" class="link-row">
@@ -272,7 +339,7 @@
         <button type="button" class="add-btn" @click="addLink">+ Добавить ссылку</button>
       </section>
 
-      <section class="section">
+      <section id="section-roles" class="section">
         <h2 class="section__title">Роли</h2>
         <p v-if="isLoadingOptions" class="loading-hint">Загрузка…</p>
         <div v-else class="chips">
@@ -289,7 +356,7 @@
         </div>
       </section>
 
-      <section class="section">
+      <section id="section-skills" class="section">
         <h2 class="section__title">Навыки</h2>
         <p v-if="isLoadingOptions" class="loading-hint">Загрузка…</p>
         <div v-else class="chips">
@@ -306,7 +373,7 @@
         </div>
       </section>
 
-      <section class="section">
+      <section id="section-teamup" class="section">
         <h2 class="section__title">Поиск сокомандников</h2>
         <label class="checkbox-row">
           <input v-model="form.openToTeamup" type="checkbox" />
@@ -314,7 +381,7 @@
         </label>
       </section>
 
-      <section class="section">
+      <section id="section-teams" class="section">
         <h2 class="section__title">Команды</h2>
         <p class="section__hint">Создайте команду, в которой участвуете</p>
         <p v-if="createTeamError" class="form__error section__error">{{ createTeamError }}</p>
@@ -345,7 +412,7 @@
         </button>
       </section>
 
-      <section class="section">
+      <section id="section-events" class="section">
         <h2 class="section__title">Хакатоны</h2>
         <p class="section__hint">Добавьте хакатон, в котором вы участвовали</p>
         <p v-if="addHackathonError" class="form__error section__error">{{ addHackathonError }}</p>
@@ -456,6 +523,40 @@
     }
   }
 
+  .section-nav {
+    position: sticky;
+    top: 61px;
+    z-index: 5;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 16px;
+    border-bottom: 1px solid $color-border;
+    background: rgba(18, 18, 20, 0.94);
+    backdrop-filter: blur(10px);
+
+    @include respond-to('lg') {
+      justify-content: center;
+      top: 62px;
+    }
+  }
+
+  .section-nav__item {
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    background: #1a1b20;
+    color: $color-text-secondary;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      color: #fff;
+      border-color: rgba($color-accent, 0.6);
+    }
+  }
+
   .form__error {
     margin: 12px 16px;
     padding: 10px 14px;
@@ -545,6 +646,30 @@
 
   .field {
     @include flex-column(6px);
+  }
+
+  .upload-avatar-btn {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 6px 14px;
+    border: 1px solid rgba($color-accent, 0.5);
+    border-radius: $radius-full;
+    background: rgba($color-accent, 0.14);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .upload-avatar-btn__input {
+    display: none;
+  }
+
+  .upload-error {
+    margin: 0;
   }
 
   .field__label {
