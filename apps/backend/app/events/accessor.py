@@ -7,8 +7,6 @@ from sqlalchemy.orm import selectinload
 from app.core.accessors import BaseAccessor
 from app.core.db import with_transaction
 from app.events.models import EventModel, EventRatingModel
-from app.events.schemas import EventRatingStatus
-from app.teams.models import team_users
 
 
 class EventAccessor(BaseAccessor):
@@ -52,7 +50,6 @@ class EventAccessor(BaseAccessor):
         description: str = "",
         date: datetime,
         cover: str | None = None,
-        is_verify: bool = False,
     ) -> EventModel:
         return await self.store.db.scalar_one(
             insert(EventModel)
@@ -61,7 +58,6 @@ class EventAccessor(BaseAccessor):
                 description=description,
                 date=date,
                 cover=cover,
-                is_verify=is_verify,
             )
             .returning(EventModel),
         )
@@ -168,49 +164,3 @@ class EventAccessor(BaseAccessor):
             ),
         )
         return result.rowcount > 0
-
-    @with_transaction
-    async def create_event_participation(
-        self,
-        *,
-        user_id: int,
-        title: str,
-        description: str = "",
-        date: datetime,
-        cover: str | None = None,
-        team_id: int | None = None,
-    ) -> EventModel | None:
-        if team_id is not None:
-            team_member_exists = await self.store.db.scalar(
-                select(team_users.c.user_id).where(
-                    team_users.c.team_id == team_id,
-                    team_users.c.user_id == user_id,
-                ),
-            )
-            if team_member_exists is None:
-                return None
-
-        event_id = await self.store.db.scalar_one(
-            insert(EventModel)
-            .values(
-                title=title,
-                description=description,
-                date=date,
-                cover=cover,
-                is_verify=False,
-            )
-            .returning(EventModel.id),
-        )
-
-        await self.store.db.execute(
-            insert(EventRatingModel).values(
-                event_id=event_id,
-                user_id=user_id,
-                status=EventRatingStatus.PARTICIPANT.value,
-                place=None,
-                team_id=team_id,
-                awarded_at=datetime.now(UTC),
-            ),
-        )
-
-        return await self.get_event_by_id(event_id)

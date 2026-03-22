@@ -102,7 +102,7 @@ Public data import endpoint for organizers:
 
 Write operations for hackathons/teams/results were moved to this endpoint.
 Legacy write endpoints for `teams/events/ratings` are removed.
-All imported hackathon data is marked verified automatically (`is_verify=true`).
+Only organizer-imported hackathons are persisted in the system.
 
 Organizer tokens are stored in DB table `organizer_api_tokens` as SHA-256 hashes.
 To create a token manually:

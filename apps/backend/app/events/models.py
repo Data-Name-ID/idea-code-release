@@ -34,8 +34,6 @@ class EventModel(IDMixin, CreatedAtMixin, UpdatedAtMixin, BaseModel):
         default=None,
     )
 
-    is_verify: Mapped[bool] = mapped_column(default=False)
-
     ratings: Mapped[list["EventRatingModel"]] = relationship(
         back_populates="event",
         lazy="selectin",

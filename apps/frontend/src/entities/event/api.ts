@@ -2,7 +2,6 @@ import { apiFetch, buildQuery } from '@shared/api/client'
 import type {
   EventResponse,
   EventListResponse,
-  EventParticipationCreateRequest,
   EventRatingResponse,
   EventRatingStatus,
 } from '@shared/types/api'
@@ -17,10 +16,4 @@ export const eventApi = {
     apiFetch<EventRatingResponse>(
       `/api/events/${eventId}/ratings${buildQuery({ status: status ?? null })}`,
     ),
-
-  createParticipation: (payload: EventParticipationCreateRequest) =>
-    apiFetch<EventResponse>('/api/events/participations', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
 }

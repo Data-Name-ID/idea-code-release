@@ -3,8 +3,7 @@ import { computed, ref } from 'vue'
 import { fetchCurrentUser } from './api'
 import { MOCK_AUTH_USER } from './mock'
 import type { AuthUser } from './types'
-
-const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
+import { USE_MOCKS } from '@shared/config/env'
 
 const currentUser = ref<AuthUser | null>(null)
 const initialized = ref(false)

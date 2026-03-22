@@ -7,7 +7,6 @@
   import { roleApi } from '@entities/role/api'
   import { skillApi } from '@entities/skill/api'
   import { teamApi } from '@entities/team/api'
-  import { eventApi } from '@entities/event/api'
   import type {
     RoleResponse,
     SkillResponse,
@@ -45,7 +44,6 @@
     { id: 'section-skills', label: 'Навыки' },
     { id: 'section-teamup', label: 'Поиск команды' },
     { id: 'section-teams', label: 'Команды' },
-    { id: 'section-events', label: 'Хакатоны' },
   ] as const
 
   const teamForm = reactive({
@@ -55,17 +53,6 @@
   const isCreatingTeam = ref(false)
   const createTeamError = ref<string | null>(null)
   const createTeamSuccess = ref<string | null>(null)
-
-  const hackathonForm = reactive({
-    title: '',
-    description: '',
-    date: '',
-    cover: '',
-    teamId: '',
-  })
-  const isAddingHackathon = ref(false)
-  const addHackathonError = ref<string | null>(null)
-  const addHackathonSuccess = ref<string | null>(null)
 
   onMounted(async () => {
     if (user.value) {
@@ -214,46 +201,6 @@
     }
   }
 
-  async function handleAddHackathon(): Promise<void> {
-    if (!hackathonForm.title.trim()) {
-      addHackathonError.value = 'Укажите название хакатона'
-      return
-    }
-    if (!hackathonForm.date) {
-      addHackathonError.value = 'Укажите дату хакатона'
-      return
-    }
-
-    const parsedDate = new Date(hackathonForm.date)
-    if (Number.isNaN(parsedDate.getTime())) {
-      addHackathonError.value = 'Неверный формат даты'
-      return
-    }
-    const isoDate = parsedDate.toISOString()
-
-    isAddingHackathon.value = true
-    addHackathonError.value = null
-    addHackathonSuccess.value = null
-    try {
-      const createdEvent = await eventApi.createParticipation({
-        title: hackathonForm.title.trim(),
-        description: hackathonForm.description.trim(),
-        date: isoDate,
-        cover: hackathonForm.cover.trim() || null,
-        team_id: hackathonForm.teamId ? Number(hackathonForm.teamId) : null,
-      })
-      hackathonForm.title = ''
-      hackathonForm.description = ''
-      hackathonForm.date = ''
-      hackathonForm.cover = ''
-      hackathonForm.teamId = ''
-      addHackathonSuccess.value = `Хакатон «${createdEvent.title}» добавлен`
-    } catch (e) {
-      addHackathonError.value = e instanceof Error ? e.message : 'Не удалось добавить хакатон'
-    } finally {
-      isAddingHackathon.value = false
-    }
-  }
 </script>
 
 <template>
@@ -423,62 +370,6 @@
 
         <button type="button" class="submit-btn submit-btn--inline" :disabled="isCreatingTeam" @click="handleCreateTeam">
           {{ isCreatingTeam ? 'Создаём…' : 'Создать команду' }}
-        </button>
-      </section>
-
-      <section id="section-events" class="section">
-        <h2 class="section__title">Хакатоны</h2>
-        <p class="section__hint">Добавьте хакатон, в котором вы участвовали</p>
-        <p v-if="addHackathonError" class="form__error section__error">{{ addHackathonError }}</p>
-        <p v-if="addHackathonSuccess" class="form__success">{{ addHackathonSuccess }}</p>
-
-        <div class="field">
-          <label class="field__label">Название хакатона</label>
-          <input
-            v-model="hackathonForm.title"
-            type="text"
-            class="field__input"
-            placeholder="например, AI Weekend 2026"
-          />
-        </div>
-
-        <div class="field">
-          <label class="field__label">Описание</label>
-          <textarea
-            v-model="hackathonForm.description"
-            class="field__input field__input--textarea"
-            rows="2"
-            placeholder="Что это был за хакатон"
-          />
-        </div>
-
-        <div class="field">
-          <label class="field__label">Дата</label>
-          <input v-model="hackathonForm.date" type="datetime-local" class="field__input" />
-        </div>
-
-        <div class="field">
-          <label class="field__label">Обложка (URL)</label>
-          <input
-            v-model="hackathonForm.cover"
-            type="url"
-            class="field__input"
-            placeholder="https://…"
-          />
-        </div>
-
-        <div class="field">
-          <label class="field__label">Команда</label>
-          <select v-model="hackathonForm.teamId" class="field__input">
-            <option value="">Личное участие</option>
-            <option v-for="team in userTeams" :key="team.id" :value="String(team.id)">
-              {{ team.name }}
-            </option>
-          </select>
-        </div>
-
-        <button type="button" class="submit-btn submit-btn--inline" :disabled="isAddingHackathon" @click="handleAddHackathon">
-          {{ isAddingHackathon ? 'Добавляем…' : 'Добавить хакатон участия' }}
         </button>
       </section>
 
