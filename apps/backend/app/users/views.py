@@ -22,15 +22,29 @@ class UserController(Controller):
         limit: int = 20,
         offset: int = 0,
         search: str | None = None,
+        location: str | None = None,
         role_id: int | None = None,
         skill_id: int | None = None,
+        open_to_teamup: str | None = None,
     ) -> OkResponse[PaginatedResponse[UserShortResponse]]:
+        resolved_open_to_teamup: bool | None
+        if open_to_teamup is None:
+            resolved_open_to_teamup = None
+        elif open_to_teamup.lower() in {"true", "1", "yes"}:
+            resolved_open_to_teamup = True
+        elif open_to_teamup.lower() in {"false", "0", "no"}:
+            resolved_open_to_teamup = False
+        else:
+            resolved_open_to_teamup = None
+
         users, total = await store.users.list_users(
             limit=limit,
             offset=offset,
             search=search,
+            location=location,
             role_id=role_id,
             skill_id=skill_id,
+            open_to_teamup=resolved_open_to_teamup,
         )
         return paginated(
             total=total,
@@ -55,6 +69,7 @@ class UserController(Controller):
             links=data.dump_links(),
             role_ids=data.role_ids,
             skill_ids=data.skill_ids,
+            open_to_teamup=data.open_to_teamup,
         )
         return ok(UserResponse.from_model(user))
 
@@ -82,6 +97,7 @@ class UserController(Controller):
             links=data.dump_links(),
             role_ids=data.role_ids,
             skill_ids=data.skill_ids,
+            open_to_teamup=data.open_to_teamup,
         )
         if user is None:
             raise_not_found("User")

@@ -1,14 +1,13 @@
 from datetime import datetime
 from typing import cast
 
-from sqlalchemy import Select, delete, insert, select, update
+from sqlalchemy import Select, delete, func, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
 from app.core.accessor_utils import (
     build_ilike_pattern,
     collect_defined_values,
-    paginate_by_id,
     replace_m2m_relations,
 )
 from app.core.accessors import BaseAccessor
@@ -172,22 +171,46 @@ class UserAccessor(BaseAccessor):
         limit: int = 20,
         offset: int = 0,
         search: str | None = None,
+        location: str | None = None,
         role_id: int | None = None,
         skill_id: int | None = None,
+        open_to_teamup: bool | None = None,
     ) -> tuple[list[UserModel], int]:
         filtered_user_ids = self._build_filtered_user_ids_stmt(
             search=search,
+            location=location,
             role_id=role_id,
             skill_id=skill_id,
+            open_to_teamup=open_to_teamup,
         )
-        return await paginate_by_id(
-            db=self.store.db,
-            ids_stmt=filtered_user_ids,
-            model=UserModel,
-            model_id=UserModel.id,
-            limit=limit,
-            offset=offset,
+        total = int(
+            await self.store.db.scalar_one(
+                select(func.count()).select_from(filtered_user_ids.subquery()),
+            ),
         )
+        if total == 0:
+            return [], 0
+
+        page_ids = (
+            filtered_user_ids.order_by(UserModel.updated_at.desc(), UserModel.id.desc())
+            .offset(offset)
+            .limit(limit)
+            .subquery()
+        )
+        users = list(
+            (
+                await self.store.db.scalars(
+                    select(UserModel)
+                    .options(
+                        selectinload(UserModel.roles),
+                        selectinload(UserModel.skills),
+                    )
+                    .join(page_ids, UserModel.id == page_ids.c.id)
+                    .order_by(UserModel.updated_at.desc(), UserModel.id.desc()),
+                )
+            ).all(),
+        )
+        return users, total
 
     @with_transaction
     async def create_user(
@@ -202,6 +225,7 @@ class UserAccessor(BaseAccessor):
         links: list[LinkData] | None = None,
         role_ids: list[int] | None = None,
         skill_ids: list[int] | None = None,
+        open_to_teamup: bool = True,
     ) -> UserModel:
         user_id = await self.store.db.scalar_one(
             insert(UserModel)
@@ -213,6 +237,7 @@ class UserAccessor(BaseAccessor):
                 description=description,
                 location=location,
                 links=self._serialize_links(links) or [],
+                open_to_teamup=open_to_teamup,
             )
             .returning(UserModel.id),
         )
@@ -236,6 +261,7 @@ class UserAccessor(BaseAccessor):
         links: list[LinkData] | None = None,
         role_ids: list[int] | None = None,
         skill_ids: list[int] | None = None,
+        open_to_teamup: bool | None = None,
     ) -> UserModel | None:
         values = collect_defined_values(
             name=name,
@@ -244,6 +270,7 @@ class UserAccessor(BaseAccessor):
             description=description,
             location=location,
             links=self._serialize_links(links),
+            open_to_teamup=open_to_teamup,
         )
         if values:
             updated_user_id = await self.store.db.scalar(
@@ -271,29 +298,47 @@ class UserAccessor(BaseAccessor):
         self,
         *,
         search: str | None = None,
+        location: str | None = None,
         role_id: int | None = None,
         skill_id: int | None = None,
+        open_to_teamup: bool | None = None,
     ) -> Select[tuple[int]]:
         stmt = select(UserModel.id)
 
         if search:
             pattern = build_ilike_pattern(search)
             stmt = stmt.where(
-                UserModel.name.ilike(pattern) | UserModel.username.ilike(pattern),
+                UserModel.name.ilike(pattern)
+                | UserModel.username.ilike(pattern)
+                | UserModel.description.ilike(pattern)
+                | UserModel.location.ilike(pattern),
             )
+        if location:
+            stmt = stmt.where(UserModel.location.ilike(build_ilike_pattern(location)))
 
         if role_id is not None:
-            stmt = stmt.join(user_roles, user_roles.c.user_id == UserModel.id).where(
-                user_roles.c.role_id == role_id,
+            stmt = stmt.where(
+                select(user_roles.c.user_id)
+                .where(
+                    user_roles.c.user_id == UserModel.id,
+                    user_roles.c.role_id == role_id,
+                )
+                .exists(),
             )
 
         if skill_id is not None:
-            stmt = stmt.join(
-                user_skills,
-                user_skills.c.user_id == UserModel.id,
-            ).where(user_skills.c.skill_id == skill_id)
+            stmt = stmt.where(
+                select(user_skills.c.user_id)
+                .where(
+                    user_skills.c.user_id == UserModel.id,
+                    user_skills.c.skill_id == skill_id,
+                )
+                .exists(),
+            )
+        if open_to_teamup is not None:
+            stmt = stmt.where(UserModel.open_to_teamup.is_(open_to_teamup))
 
-        return stmt.distinct()
+        return stmt
 
     @staticmethod
     def _serialize_links(links: list[LinkData] | None) -> list[dict[str, str]] | None:

@@ -57,6 +57,22 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/teammates',
+    name: 'teammates',
+    component: () => import('@pages/teammates/ui/TeammatesPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/applications',
+    name: 'applications',
+    component: () => import('@pages/applications/ui/ApplicationsPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/organizer/import',
     name: 'organizer-import',
     component: () => import('@pages/organizer-import/ui/OrganizerImportPage.vue'),

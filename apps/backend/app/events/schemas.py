@@ -41,7 +41,6 @@ class EventCreateRequest(Struct, kw_only=True):
     description: str = ""
     date: datetime
     cover: str | None = None
-    is_verify: bool = False
 
 
 class EventUpdateRequest(Struct, kw_only=True):
@@ -79,4 +78,12 @@ class EventRatingCreateRequest(Struct, kw_only=True):
     user_id: int
     status: EventRatingStatus
     place: int | None = None
+    team_id: int | None = None
+
+
+class EventParticipationCreateRequest(Struct, kw_only=True):
+    title: str
+    description: str = ""
+    date: datetime
+    cover: str | None = None
     team_id: int | None = None

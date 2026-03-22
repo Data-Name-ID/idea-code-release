@@ -50,6 +50,7 @@ export interface UserResponse {
   links: LinkResponse[]
   roles: RoleResponse[]
   skills: SkillResponse[]
+  open_to_teamup: boolean
 }
 
 export interface UserShortResponse {
@@ -60,6 +61,7 @@ export interface UserShortResponse {
   location: string
   roles: RoleResponse[]
   skills: SkillResponse[]
+  open_to_teamup: boolean
 }
 
 export interface UserListResponse {
@@ -79,6 +81,7 @@ export interface UserCreateRequest {
   links?: LinkRequest[]
   role_ids?: number[]
   skill_ids?: number[]
+  open_to_teamup?: boolean
 }
 
 export interface UserUpdateRequest {
@@ -90,14 +93,17 @@ export interface UserUpdateRequest {
   links?: LinkRequest[] | null
   role_ids?: number[] | null
   skill_ids?: number[] | null
+  open_to_teamup?: boolean | null
 }
 
 export interface UsersListParams {
   limit?: number
   offset?: number
   search?: string
+  location?: string
   role_id?: number
   skill_id?: number
+  open_to_teamup?: boolean
 }
 
 // ─── Events ───────────────────────────────────────────────
@@ -118,6 +124,14 @@ export interface EventListResponse {
   limit: number
   offset: number
   data: EventResponse[]
+}
+
+export interface EventParticipationCreateRequest {
+  title: string
+  description?: string
+  date: string
+  cover?: string | null
+  team_id?: number | null
 }
 
 export interface EventRatingEntryResponse {
@@ -154,6 +168,58 @@ export interface TeamListResponse {
   limit: number
   offset: number
   data: TeamShortResponse[]
+}
+
+export interface TeamCreateRequest {
+  name: string
+  description?: string
+  user_ids?: number[]
+}
+
+// ─── Participation Applications ───────────────────────────
+
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected'
+export type PreferredTeamFormat = 'solo' | 'team'
+
+export interface ParticipationApplicationResponse {
+  id: number
+  applicant_user_id: number
+  event_id: number
+  comment: string
+  desired_role: string
+  preferred_team_format: PreferredTeamFormat
+  status: ApplicationStatus
+  skills: SkillResponse[]
+  applicant: UserShortResponse | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ParticipationApplicationCreateRequest {
+  event_id: number
+  comment?: string
+  desired_role?: string
+  preferred_team_format?: PreferredTeamFormat
+  skill_ids?: number[]
+}
+
+export interface ParticipationApplicationStatusUpdateRequest {
+  status: ApplicationStatus
+}
+
+export interface ParticipationApplicationListParams {
+  limit?: number
+  offset?: number
+  event_id?: number
+  status?: ApplicationStatus
+  applicant_user_id?: number
+}
+
+export interface ParticipationApplicationListResponse {
+  total: number
+  limit: number
+  offset: number
+  data: ParticipationApplicationResponse[]
 }
 
 export interface TeamsListParams {

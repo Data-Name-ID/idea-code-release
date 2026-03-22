@@ -12,6 +12,7 @@ from litestar.security.jwt import JWTCookieAuth, Token
 import app.auth.urls as auth_urls
 import app.events.urls as events_urls
 import app.ingest.urls as ingest_urls
+import app.participation_applications.urls as participation_applications_urls
 import app.roles.urls as roles_urls
 import app.skills.urls as skills_urls
 import app.teams.urls as teams_urls
@@ -70,6 +71,7 @@ app = Litestar(
         *skills_urls.get_handlers(),
         *teams_urls.get_handlers(),
         *events_urls.get_handlers(),
+        *participation_applications_urls.get_handlers(),
         *ingest_urls.get_handlers(),
     ),
     on_app_init=[

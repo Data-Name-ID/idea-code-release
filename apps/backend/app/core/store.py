@@ -11,6 +11,9 @@ class Store:
 
         from app.events.accessor import EventAccessor
         from app.ingest.accessor import OrganizerIngestAccessor
+        from app.participation_applications.accessor import (
+            ParticipationApplicationAccessor,
+        )
         from app.roles.accessor import RoleAccessor
         from app.skills.accessor import SkillAccessor
         from app.teams.accessor import TeamAccessor
@@ -21,4 +24,5 @@ class Store:
         self.skills = SkillAccessor(self)
         self.teams = TeamAccessor(self)
         self.events = EventAccessor(self)
+        self.participation_applications = ParticipationApplicationAccessor(self)
         self.organizer_ingest = OrganizerIngestAccessor(self)

@@ -73,6 +73,7 @@ class UserModel(IDMixin, CreatedAtMixin, UpdatedAtMixin, BaseModel):
     )
 
     activated: Mapped[bool] = mapped_column(default=False)
+    open_to_teamup: Mapped[bool] = mapped_column(default=True)
 
     roles: Mapped[list[RoleModel]] = relationship(
         secondary=user_roles,

@@ -82,6 +82,7 @@ class UserResponse(Struct, kw_only=True):
     links: list[LinkResponse] = []
     roles: list[RoleResponse] = []
     skills: list[SkillResponse] = []
+    open_to_teamup: bool = True
 
     @classmethod
     def from_model(cls, model: UserModel) -> Self:
@@ -96,6 +97,7 @@ class UserResponse(Struct, kw_only=True):
             links=[LinkResponse.from_dict(link) for link in (model.links or [])],
             roles=[RoleResponse.from_model(r) for r in model.roles],
             skills=[SkillResponse.from_model(s) for s in model.skills],
+            open_to_teamup=model.open_to_teamup,
         )
 
 
@@ -107,6 +109,7 @@ class UserShortResponse(Struct, kw_only=True):
     location: str = ""
     roles: list[RoleResponse] = []
     skills: list[SkillResponse] = []
+    open_to_teamup: bool = True
 
     @classmethod
     def from_model(cls, model: UserModel) -> Self:
@@ -118,6 +121,7 @@ class UserShortResponse(Struct, kw_only=True):
             location=model.location,
             roles=[RoleResponse.from_model(r) for r in model.roles],
             skills=[SkillResponse.from_model(s) for s in model.skills],
+            open_to_teamup=model.open_to_teamup,
         )
 
 
@@ -131,6 +135,7 @@ class UserCreateRequest(Struct, kw_only=True):
     links: list[LinkRequest] = []
     role_ids: list[int] = []
     skill_ids: list[int] = []
+    open_to_teamup: bool = True
 
     def dump_links(self) -> list[LinkData]:
         return [link.to_domain() for link in self.links]
@@ -145,6 +150,7 @@ class UserUpdateRequest(Struct, kw_only=True):
     links: list[LinkRequest] | None = None
     role_ids: list[int] | None = None
     skill_ids: list[int] | None = None
+    open_to_teamup: bool | None = None
 
     def dump_links(self) -> list[LinkData] | None:
         if self.links is None:

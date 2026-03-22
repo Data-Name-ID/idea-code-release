@@ -1,8 +1,9 @@
-from litestar import Controller, get
+from litestar import Controller, Request, get, post, status_codes
 
 from app.core.schemas import OkResponse, PaginatedResponse
 from app.core.store import Store
 from app.teams.schemas import (
+    TeamCreateRequest,
     TeamResponse,
     TeamShortResponse,
 )
@@ -12,6 +13,23 @@ from app.web.responses import ok, paginated, raise_not_found
 class TeamController(Controller):
     path = "/api/teams"
     tags = ("teams",)
+
+    @post(path="/", status_code=status_codes.HTTP_201_CREATED)
+    async def create_team(
+        self,
+        store: Store,
+        request: Request,
+        data: TeamCreateRequest,
+    ) -> OkResponse[TeamResponse]:
+        user_ids = set(data.user_ids)
+        user_ids.add(int(request.user.id))
+        team = await store.teams.create_team(
+            name=data.name,
+            description=data.description,
+            user_ids=list(user_ids),
+        )
+        events = await store.teams.get_team_events(team.id)
+        return ok(TeamResponse.from_model(team, events=events))
 
     @get(path="/", exclude_from_auth=True)
     async def list_teams(

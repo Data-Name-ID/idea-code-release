@@ -6,7 +6,14 @@
   import { userApi } from '@entities/user/api'
   import { roleApi } from '@entities/role/api'
   import { skillApi } from '@entities/skill/api'
-  import type { RoleResponse, SkillResponse, LinkRequest } from '@shared/types/api'
+  import { teamApi } from '@entities/team/api'
+  import { eventApi } from '@entities/event/api'
+  import type {
+    RoleResponse,
+    SkillResponse,
+    LinkRequest,
+    TeamShortResponse,
+  } from '@shared/types/api'
 
   const router = useRouter()
   const user = computed(() => authState.currentUser.value)
@@ -20,6 +27,7 @@
     links: [] as LinkRequest[],
     roleIds: [] as number[],
     skillIds: [] as number[],
+    openToTeamup: true,
   })
 
   const allRoles = ref<RoleResponse[]>([])
@@ -27,6 +35,26 @@
   const isLoadingOptions = ref(true)
   const isSaving = ref(false)
   const saveError = ref<string | null>(null)
+  const userTeams = ref<TeamShortResponse[]>([])
+
+  const teamForm = reactive({
+    name: '',
+    description: '',
+  })
+  const isCreatingTeam = ref(false)
+  const createTeamError = ref<string | null>(null)
+  const createTeamSuccess = ref<string | null>(null)
+
+  const hackathonForm = reactive({
+    title: '',
+    description: '',
+    date: '',
+    cover: '',
+    teamId: '',
+  })
+  const isAddingHackathon = ref(false)
+  const addHackathonError = ref<string | null>(null)
+  const addHackathonSuccess = ref<string | null>(null)
 
   onMounted(async () => {
     if (user.value) {
@@ -38,12 +66,18 @@
       form.links = user.value.links.map((l) => ({ url: l.url, label: l.label }))
       form.roleIds = user.value.roles.map((r) => r.id)
       form.skillIds = user.value.skills.map((s) => s.id)
+      form.openToTeamup = user.value.open_to_teamup
     }
 
     try {
-      const [roles, skills] = await Promise.all([roleApi.getList(), skillApi.getList()])
+      const [roles, skills, teams] = await Promise.all([
+        roleApi.getList(),
+        skillApi.getList(),
+        user.value ? teamApi.getList({ user_id: user.value.id, limit: 100 }) : Promise.resolve(null),
+      ])
       allRoles.value = roles
       allSkills.value = skills
+      userTeams.value = teams?.data ?? []
     } finally {
       isLoadingOptions.value = false
     }
@@ -78,6 +112,7 @@
         links: form.links.filter((l) => l.url.trim()),
         role_ids: form.roleIds,
         skill_ids: form.skillIds,
+        open_to_teamup: form.openToTeamup,
       })
       setCurrentUser(updated)
       await router.replace({ name: 'profile' })
@@ -85,6 +120,79 @@
       saveError.value = e instanceof Error ? e.message : 'Не удалось сохранить профиль'
     } finally {
       isSaving.value = false
+    }
+  }
+
+  async function handleCreateTeam(): Promise<void> {
+    if (!teamForm.name.trim()) {
+      createTeamError.value = 'Укажите название команды'
+      return
+    }
+
+    isCreatingTeam.value = true
+    createTeamError.value = null
+    createTeamSuccess.value = null
+    try {
+      const created = await teamApi.create({
+        name: teamForm.name.trim(),
+        description: teamForm.description.trim(),
+      })
+      const existing = new Set(userTeams.value.map((team) => team.id))
+      if (!existing.has(created.id)) {
+        userTeams.value.unshift({
+          id: created.id,
+          name: created.name,
+          description: created.description,
+        })
+      }
+      teamForm.name = ''
+      teamForm.description = ''
+      createTeamSuccess.value = `Команда «${created.name}» создана`
+    } catch (e) {
+      createTeamError.value = e instanceof Error ? e.message : 'Не удалось создать команду'
+    } finally {
+      isCreatingTeam.value = false
+    }
+  }
+
+  async function handleAddHackathon(): Promise<void> {
+    if (!hackathonForm.title.trim()) {
+      addHackathonError.value = 'Укажите название хакатона'
+      return
+    }
+    if (!hackathonForm.date) {
+      addHackathonError.value = 'Укажите дату хакатона'
+      return
+    }
+
+    const parsedDate = new Date(hackathonForm.date)
+    if (Number.isNaN(parsedDate.getTime())) {
+      addHackathonError.value = 'Неверный формат даты'
+      return
+    }
+    const isoDate = parsedDate.toISOString()
+
+    isAddingHackathon.value = true
+    addHackathonError.value = null
+    addHackathonSuccess.value = null
+    try {
+      const createdEvent = await eventApi.createParticipation({
+        title: hackathonForm.title.trim(),
+        description: hackathonForm.description.trim(),
+        date: isoDate,
+        cover: hackathonForm.cover.trim() || null,
+        team_id: hackathonForm.teamId ? Number(hackathonForm.teamId) : null,
+      })
+      hackathonForm.title = ''
+      hackathonForm.description = ''
+      hackathonForm.date = ''
+      hackathonForm.cover = ''
+      hackathonForm.teamId = ''
+      addHackathonSuccess.value = `Хакатон «${createdEvent.title}» добавлен`
+    } catch (e) {
+      addHackathonError.value = e instanceof Error ? e.message : 'Не удалось добавить хакатон'
+    } finally {
+      isAddingHackathon.value = false
     }
   }
 </script>
@@ -198,6 +306,101 @@
         </div>
       </section>
 
+      <section class="section">
+        <h2 class="section__title">Поиск сокомандников</h2>
+        <label class="checkbox-row">
+          <input v-model="form.openToTeamup" type="checkbox" />
+          <span>Я открыт(а) к приглашениям в команду</span>
+        </label>
+      </section>
+
+      <section class="section">
+        <h2 class="section__title">Команды</h2>
+        <p class="section__hint">Создайте команду, в которой участвуете</p>
+        <p v-if="createTeamError" class="form__error section__error">{{ createTeamError }}</p>
+        <p v-if="createTeamSuccess" class="form__success">{{ createTeamSuccess }}</p>
+
+        <div class="field">
+          <label class="field__label">Название команды</label>
+          <input
+            v-model="teamForm.name"
+            type="text"
+            class="field__input"
+            placeholder="например, Team Rocket"
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Описание</label>
+          <textarea
+            v-model="teamForm.description"
+            class="field__input field__input--textarea"
+            rows="2"
+            placeholder="Коротко о вашей команде"
+          />
+        </div>
+
+        <button type="button" class="submit-btn submit-btn--inline" :disabled="isCreatingTeam" @click="handleCreateTeam">
+          {{ isCreatingTeam ? 'Создаём…' : 'Создать команду' }}
+        </button>
+      </section>
+
+      <section class="section">
+        <h2 class="section__title">Хакатоны</h2>
+        <p class="section__hint">Добавьте хакатон, в котором вы участвовали</p>
+        <p v-if="addHackathonError" class="form__error section__error">{{ addHackathonError }}</p>
+        <p v-if="addHackathonSuccess" class="form__success">{{ addHackathonSuccess }}</p>
+
+        <div class="field">
+          <label class="field__label">Название хакатона</label>
+          <input
+            v-model="hackathonForm.title"
+            type="text"
+            class="field__input"
+            placeholder="например, AI Weekend 2026"
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Описание</label>
+          <textarea
+            v-model="hackathonForm.description"
+            class="field__input field__input--textarea"
+            rows="2"
+            placeholder="Что это был за хакатон"
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Дата</label>
+          <input v-model="hackathonForm.date" type="datetime-local" class="field__input" />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Обложка (URL)</label>
+          <input
+            v-model="hackathonForm.cover"
+            type="url"
+            class="field__input"
+            placeholder="https://…"
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Команда</label>
+          <select v-model="hackathonForm.teamId" class="field__input">
+            <option value="">Личное участие</option>
+            <option v-for="team in userTeams" :key="team.id" :value="String(team.id)">
+              {{ team.name }}
+            </option>
+          </select>
+        </div>
+
+        <button type="button" class="submit-btn submit-btn--inline" :disabled="isAddingHackathon" @click="handleAddHackathon">
+          {{ isAddingHackathon ? 'Добавляем…' : 'Добавить хакатон участия' }}
+        </button>
+      </section>
+
       <button type="submit" class="submit-btn" :disabled="isSaving">
         {{ isSaving ? 'Сохраняем…' : 'Сохранить изменения' }}
       </button>
@@ -289,6 +492,25 @@
     text-transform: uppercase;
   }
 
+  .section__hint {
+    margin: 0;
+    color: $color-text-secondary;
+    font-size: 13px;
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: $color-text-primary;
+
+    input {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
   .avatar-preview {
     display: flex;
     justify-content: center;
@@ -353,6 +575,20 @@
       resize: vertical;
       min-height: 80px;
     }
+  }
+
+  .section__error {
+    margin: 0;
+  }
+
+  .form__success {
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: $radius-md;
+    background: rgba(#34d399, 0.12);
+    border: 1px solid rgba(#34d399, 0.35);
+    color: #34d399;
+    font-size: 14px;
   }
 
   .link-row {
@@ -453,5 +689,9 @@
     @include respond-to('lg') {
       margin: 0;
     }
+  }
+
+  .submit-btn--inline {
+    margin-top: 4px;
   }
 </style>

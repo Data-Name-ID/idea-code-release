@@ -76,6 +76,7 @@ export const MOCK_USERS: UserResponse[] = [
       { id: 2, name: 'TypeScript' },
       { id: 9, name: 'Docker' },
     ],
+    open_to_teamup: true,
   },
   {
     id: 2,
@@ -99,6 +100,7 @@ export const MOCK_USERS: UserResponse[] = [
       { id: 2, name: 'TypeScript' },
       { id: 15, name: 'GraphQL' },
     ],
+    open_to_teamup: true,
   },
   {
     id: 3,
@@ -121,6 +123,7 @@ export const MOCK_USERS: UserResponse[] = [
       { id: 13, name: 'Kubernetes' },
       { id: 14, name: 'AWS' },
     ],
+    open_to_teamup: false,
   },
   {
     id: 4,
@@ -143,6 +146,7 @@ export const MOCK_USERS: UserResponse[] = [
       { id: 14, name: 'AWS' },
       { id: 16, name: 'Rust' },
     ],
+    open_to_teamup: true,
   },
   {
     id: 5,
@@ -163,6 +167,7 @@ export const MOCK_USERS: UserResponse[] = [
       { id: 3, name: 'Figma' },
       { id: 15, name: 'GraphQL' },
     ],
+    open_to_teamup: true,
   },
 ]
 
@@ -170,7 +175,7 @@ export const MOCK_USERS_LIST: UserListResponse = {
   total: MOCK_USERS.length,
   limit: 20,
   offset: 0,
-  data: MOCK_USERS.map(({ id, username, name, avatar, location, roles, skills }) => ({
+  data: MOCK_USERS.map(({ id, username, name, avatar, location, roles, skills, open_to_teamup }) => ({
     id,
     username,
     name,
@@ -178,6 +183,7 @@ export const MOCK_USERS_LIST: UserListResponse = {
     location,
     roles,
     skills,
+    open_to_teamup,
   })),
 }
 
@@ -273,8 +279,8 @@ export const MOCK_TEAMS: TeamResponse[] = [
     name: 'Binary Wolves',
     description: 'Команда Full-Stack и ML разработчиков.',
     users: [_users[0], _users[1], _users[2], _users[3], _users[4]].map(
-      ({ id, username, name, avatar, location, roles, skills }) => ({
-        id, username, name, avatar, location, roles, skills,
+      ({ id, username, name, avatar, location, roles, skills, open_to_teamup }) => ({
+        id, username, name, avatar, location, roles, skills, open_to_teamup,
       }),
     ),
     events: [MOCK_EVENTS[0], MOCK_EVENTS[3]],
@@ -284,8 +290,8 @@ export const MOCK_TEAMS: TeamResponse[] = [
     name: 'Neural Nomads',
     description: 'ML-инженеры и дата-сайентисты.',
     users: [_users[0], _users[1], _users[2], _users[4]].map(
-      ({ id, username, name, avatar, location, roles, skills }) => ({
-        id, username, name, avatar, location, roles, skills,
+      ({ id, username, name, avatar, location, roles, skills, open_to_teamup }) => ({
+        id, username, name, avatar, location, roles, skills, open_to_teamup,
       }),
     ),
     events: [MOCK_EVENTS[0], MOCK_EVENTS[1]],
@@ -295,8 +301,8 @@ export const MOCK_TEAMS: TeamResponse[] = [
     name: 'Code Pirates',
     description: 'Backend и DevOps энтузиасты.',
     users: [_users[0], _users[1], _users[2], _users[3]].map(
-      ({ id, username, name, avatar, location, roles, skills }) => ({
-        id, username, name, avatar, location, roles, skills,
+      ({ id, username, name, avatar, location, roles, skills, open_to_teamup }) => ({
+        id, username, name, avatar, location, roles, skills, open_to_teamup,
       }),
     ),
     events: [MOCK_EVENTS[2]],

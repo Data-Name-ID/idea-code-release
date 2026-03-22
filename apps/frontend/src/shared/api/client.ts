@@ -44,8 +44,13 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   return body as T
 }
 
-export function buildQuery(params: Record<string, string | number | undefined | null>): string {
-  const entries = Object.entries(params).filter(([, v]) => v != null) as [string, string | number][]
+export function buildQuery(
+  params: Record<string, string | number | boolean | undefined | null>,
+): string {
+  const entries = Object.entries(params).filter(([, v]) => v != null) as [
+    string,
+    string | number | boolean,
+  ][]
   if (entries.length === 0) return ''
   return '?' + new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString()
 }

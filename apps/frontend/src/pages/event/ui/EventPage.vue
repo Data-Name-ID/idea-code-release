@@ -3,9 +3,13 @@
   import { useRoute, useRouter } from 'vue-router'
 
   import { eventApi } from '@entities/event/api'
+  import { participationApplicationApi } from '@entities/participation-application/api'
+  import { roleApi } from '@entities/role/api'
+  import { skillApi } from '@entities/skill/api'
   import { userApi } from '@entities/user/api'
   import { teamApi } from '@entities/team/api'
   import { formatDateLong, initials } from '@shared/lib/format'
+  import type { RoleResponse, SkillResponse } from '@shared/types/api'
   import type { RatingEntry } from '../model/types'
 
   const route = useRoute()
@@ -16,6 +20,17 @@
   const isLoading = ref(true)
   const error = ref<string | null>(null)
   const entries = ref<RatingEntry[]>([])
+  const isSendingApplication = ref(false)
+  const applicationError = ref<string | null>(null)
+  const applicationSuccess = ref<string | null>(null)
+  const allRoles = ref<RoleResponse[]>([])
+  const allSkills = ref<SkillResponse[]>([])
+  const applicationForm = ref({
+    desiredRole: '',
+    preferredTeamFormat: 'team' as 'team' | 'solo',
+    comment: '',
+    skillIds: [] as number[],
+  })
 
   const winners = computed(() => entries.value.filter((e) => e.status === 'winner'))
   const prizeWinners = computed(() => entries.value.filter((e) => e.status === 'prize_winner'))
@@ -23,12 +38,16 @@
 
   onMounted(async () => {
     try {
-      const [eventData, ratingsData] = await Promise.all([
+      const [eventData, ratingsData, rolesData, skillsData] = await Promise.all([
         eventApi.getById(eventId.value),
         eventApi.getRatings(eventId.value),
+        roleApi.getList(),
+        skillApi.getList(),
       ])
 
       event.value = eventData
+      allRoles.value = rolesData
+      allSkills.value = skillsData
 
       const raw = ratingsData.ratings
       const userIds = [...new Set(raw.map((r) => r.user_id))]
@@ -95,6 +114,35 @@
     if (entry.kind === 'team') router.push(`/teams/${entry.id}`)
     else router.push(`/users/${entry.id}`)
   }
+
+  function toggleSkill(skillId: number): void {
+    const current = applicationForm.value.skillIds
+    const index = current.indexOf(skillId)
+    if (index === -1) current.push(skillId)
+    else current.splice(index, 1)
+  }
+
+  async function sendApplication(): Promise<void> {
+    isSendingApplication.value = true
+    applicationError.value = null
+    applicationSuccess.value = null
+    try {
+      await participationApplicationApi.create({
+        event_id: eventId.value,
+        desired_role: applicationForm.value.desiredRole,
+        preferred_team_format: applicationForm.value.preferredTeamFormat,
+        comment: applicationForm.value.comment,
+        skill_ids: applicationForm.value.skillIds,
+      })
+      applicationForm.value.comment = ''
+      applicationForm.value.skillIds = []
+      applicationSuccess.value = 'Заявка отправлена'
+    } catch (e) {
+      applicationError.value = e instanceof Error ? e.message : 'Не удалось отправить заявку'
+    } finally {
+      isSendingApplication.value = false
+    }
+  }
 </script>
 
 <template>
@@ -147,6 +195,52 @@
           {{ formatDateLong(event.date) }}
         </div>
         <p v-if="event.description" class="info__description">{{ event.description }}</p>
+      </section>
+
+      <section class="application">
+        <div class="application__head">
+          <h2 class="application__title">Оставить заявку на участие</h2>
+          <RouterLink :to="`/applications?event_id=${event.id}`" class="application__link">Все заявки</RouterLink>
+        </div>
+
+        <div class="application__grid">
+          <select v-model="applicationForm.desiredRole" class="application__field">
+            <option value="">Желаемая роль</option>
+            <option v-for="role in allRoles" :key="role.id" :value="role.name">{{ role.name }}</option>
+          </select>
+
+          <select v-model="applicationForm.preferredTeamFormat" class="application__field">
+            <option value="team">Хочу в команду</option>
+            <option value="solo">Рассматриваю solo</option>
+          </select>
+        </div>
+
+        <textarea
+          v-model="applicationForm.comment"
+          class="application__field"
+          rows="3"
+          placeholder="Комментарий о вашем опыте и ожиданиях"
+        />
+
+        <div class="application__skills">
+          <button
+            v-for="skill in allSkills"
+            :key="skill.id"
+            type="button"
+            class="application__skill"
+            :class="{ 'application__skill--active': applicationForm.skillIds.includes(skill.id) }"
+            @click="toggleSkill(skill.id)"
+          >
+            {{ skill.name }}
+          </button>
+        </div>
+
+        <p v-if="applicationError" class="application__error">{{ applicationError }}</p>
+        <p v-if="applicationSuccess" class="application__success">{{ applicationSuccess }}</p>
+
+        <button type="button" class="application__submit" :disabled="isSendingApplication" @click="sendApplication">
+          {{ isSendingApplication ? 'Отправляем…' : 'Оставить заявку' }}
+        </button>
       </section>
 
       <section v-if="entries.length" class="ratings">
@@ -366,6 +460,104 @@
     font-size: 14px;
     color: $color-text-secondary;
     line-height: 1.6;
+  }
+
+  .application {
+    padding: 20px 16px;
+    @include flex-column(10px);
+    border-bottom: 1px solid $color-border;
+
+    @include respond-to('lg') {
+      padding: 28px 32px;
+      background: #141417;
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+    }
+  }
+
+  .application__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .application__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .application__link {
+    font-size: 13px;
+    color: $color-text-secondary;
+    text-decoration: none;
+  }
+
+  .application__grid {
+    display: grid;
+    gap: 8px;
+
+    @include respond-to('lg') {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .application__field {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+    background: $color-surface;
+    color: $color-text-primary;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .application__skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .application__skill {
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: $color-text-secondary;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .application__skill--active {
+    border-color: rgba($color-accent, 0.45);
+    color: $color-accent;
+    background: rgba($color-accent, 0.12);
+  }
+
+  .application__submit {
+    align-self: flex-start;
+    border: none;
+    border-radius: $radius-full;
+    padding: 8px 14px;
+    background: $color-accent;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .application__error {
+    margin: 0;
+    color: #f87171;
+    font-size: 13px;
+  }
+
+  .application__success {
+    margin: 0;
+    color: #34d399;
+    font-size: 13px;
   }
 
   .ratings {
