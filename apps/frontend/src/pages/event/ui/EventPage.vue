@@ -110,12 +110,14 @@
     </header>
 
     <template v-if="isLoading">
-      <div class="cover-skeleton" />
-      <div class="info-skeleton">
-        <div class="skel skel--badge" />
-        <div class="skel skel--title" />
-        <div class="skel skel--line" />
-        <div class="skel skel--line skel--short" />
+      <div class="page-body">
+        <div class="cover-skeleton" />
+        <div class="info-skeleton">
+          <div class="skel skel--badge" />
+          <div class="skel skel--title" />
+          <div class="skel skel--line" />
+          <div class="skel skel--line skel--short" />
+        </div>
       </div>
     </template>
 
@@ -124,6 +126,7 @@
     </div>
 
     <template v-else-if="event">
+      <div class="page-body">
       <div class="cover">
         <img v-if="event.cover" :src="event.cover" :alt="event.title" class="cover__img" />
         <div v-else class="cover__placeholder" />
@@ -252,6 +255,7 @@
       <div v-else class="state-empty">
         <p>Результаты ещё не опубликованы</p>
       </div>
+      </div>
     </template>
   </div>
 </template>
@@ -274,10 +278,27 @@
     @include back-button;
   }
 
+  .page-body {
+    @include respond-to('lg') {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 32px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+  }
+
   .cover {
     position: relative;
     height: 220px;
     background: #1e1e1e;
+
+    @include respond-to('lg') {
+      height: 400px;
+      border-radius: $radius-2xl;
+      overflow: hidden;
+    }
   }
 
   .cover__img {
@@ -314,6 +335,13 @@
     padding: 20px 16px;
     border-bottom: 1px solid $color-border;
     @include flex-column(8px);
+
+    @include respond-to('lg') {
+      padding: 28px 32px;
+      background: #141417;
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+    }
   }
 
   .info__title {
@@ -343,6 +371,13 @@
   .ratings {
     padding: 20px 16px;
     @include flex-column(20px);
+
+    @include respond-to('lg') {
+      padding: 28px 32px;
+      background: #141417;
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+    }
   }
 
   .ratings__title {
@@ -458,6 +493,11 @@
   .cover-skeleton {
     height: 220px;
     @include skeleton-shimmer;
+
+    @include respond-to('lg') {
+      height: 400px;
+      border-radius: $radius-2xl;
+    }
   }
 
   .info-skeleton {

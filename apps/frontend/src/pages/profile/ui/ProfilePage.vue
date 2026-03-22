@@ -38,36 +38,44 @@
 
     <template v-else-if="user">
       <div class="edit-bar">
-        <RouterLink :to="{ name: 'profile-edit' }" class="edit-link">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-          </svg>
-          Редактировать
-        </RouterLink>
+        <div class="edit-bar__inner">
+          <RouterLink :to="{ name: 'profile-edit' }" class="edit-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+            </svg>
+            Редактировать
+          </RouterLink>
+        </div>
       </div>
 
-      <UserProfileCard :user="user" />
+      <div class="profile-body">
+        <aside class="profile-sidebar">
+          <div class="sidebar-card">
+            <UserProfileCard :user="user" />
+          </div>
+          <div class="sidebar-section">
+            <SpecializationCard :roles="user.roles" :skills="user.skills" />
+          </div>
+        </aside>
 
-      <div class="section">
-        <ActivityFeed
-          :items="activityItems"
-          :is-loading="isLoadingActivity"
-          :active-filter="activityFilter"
-          @filter-change="activityFilter = $event"
-          @navigate-to-event="(id) => $router.push(`/events/${id}`)"
-        />
-      </div>
-
-      <div class="section">
-        <SpecializationCard :roles="user.roles" :skills="user.skills" />
-      </div>
-
-      <div class="section">
-        <TeamsCard
-          :teams="teams"
-          :is-loading="isLoadingTeams"
-          @navigate-to-team="(id) => $router.push(`/teams/${id}`)"
-        />
+        <main class="profile-main">
+          <div class="main-section">
+            <ActivityFeed
+              :items="activityItems"
+              :is-loading="isLoadingActivity"
+              :active-filter="activityFilter"
+              @filter-change="activityFilter = $event"
+              @navigate-to-event="(id) => $router.push(`/events/${id}`)"
+            />
+          </div>
+          <div class="main-section">
+            <TeamsCard
+              :teams="teams"
+              :is-loading="isLoadingTeams"
+              @navigate-to-team="(id) => $router.push(`/teams/${id}`)"
+            />
+          </div>
+        </main>
       </div>
     </template>
   </div>
@@ -78,10 +86,32 @@
     @include page-root;
   }
 
+  // ─── Edit bar ────────────────────────────────────────────────────────────────
+
   .edit-bar {
     display: flex;
     justify-content: flex-end;
     padding: 10px 16px 0;
+    border-bottom: 1px solid $color-border;
+
+    @include respond-to('lg') {
+      padding: 0;
+      border-bottom: none;
+    }
+  }
+
+  .edit-bar__inner {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 0 10px;
+
+    @include respond-to('lg') {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 14px 32px;
+      border-bottom: 1px solid $color-border;
+    }
   }
 
   .edit-link {
@@ -104,10 +134,78 @@
     }
   }
 
-  .section {
-    padding: 0 16px;
-    margin-top: 20px;
+  // ─── Body layout ─────────────────────────────────────────────────────────────
+
+  .profile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px 16px 48px;
+
+    @include respond-to('lg') {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 32px 64px;
+    }
   }
+
+  // ─── Sidebar ─────────────────────────────────────────────────────────────────
+
+  .profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    @include respond-to('lg') {
+      width: 320px;
+      flex-shrink: 0;
+      gap: 16px;
+    }
+  }
+
+  .sidebar-card {
+    @include respond-to('lg') {
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+      background: #141417;
+    }
+  }
+
+  .sidebar-section {
+    @include respond-to('lg') {
+      background: #1a1a1d;
+      border: 1px solid rgba($color-accent, 0.2);
+      border-radius: $radius-2xl;
+    }
+  }
+
+  // ─── Main column ─────────────────────────────────────────────────────────────
+
+  .profile-main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+
+    @include respond-to('lg') {
+      flex: 1;
+      gap: 24px;
+    }
+  }
+
+  .main-section {
+    @include respond-to('lg') {
+      background: #141417;
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+      padding: 28px 32px;
+    }
+  }
+
+  // ─── Skeleton ────────────────────────────────────────────────────────────────
 
   .profile-skeleton {
     @include flex-column(14px);

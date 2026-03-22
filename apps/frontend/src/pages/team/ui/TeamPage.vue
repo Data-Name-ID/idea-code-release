@@ -71,6 +71,7 @@
     </header>
 
     <template v-if="isLoading">
+      <div class="page-body">
       <div class="hero-skeleton">
         <div class="skel skel--icon" />
         <div class="skel skel--title" />
@@ -80,6 +81,7 @@
           <div class="skel skel--stat" />
         </div>
       </div>
+      </div>
     </template>
 
     <div v-else-if="error" class="state-empty">
@@ -87,6 +89,7 @@
     </div>
 
     <template v-else-if="team">
+      <div class="page-body">
       <section class="hero">
         <div class="hero__icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32">
@@ -172,6 +175,7 @@
           </div>
         </div>
       </section>
+      </div>
     </template>
   </div>
 </template>
@@ -194,11 +198,29 @@
     @include back-button;
   }
 
+  .page-body {
+    @include respond-to('lg') {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 32px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+  }
+
   .hero {
     @include flex-column(10px);
     align-items: center;
     padding: 32px 16px 24px;
     border-bottom: 1px solid $color-border;
+
+    @include respond-to('lg') {
+      padding: 40px 48px;
+      background: #141417;
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+    }
   }
 
   .hero__icon {
@@ -258,6 +280,13 @@
     padding: 20px 16px;
     @include flex-column(12px);
     border-bottom: 1px solid $color-border;
+
+    @include respond-to('lg') {
+      padding: 28px 32px;
+      background: #141417;
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+    }
   }
 
   .section__title {
@@ -268,6 +297,12 @@
 
   .member-list {
     @include flex-column(8px);
+
+    @include respond-to('lg') {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
   }
 
   .member {
@@ -314,6 +349,12 @@
 
   .event-list {
     @include flex-column(10px);
+
+    @include respond-to('lg') {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
   }
 
   .event-card {
