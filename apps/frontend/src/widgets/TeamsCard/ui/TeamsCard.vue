@@ -39,12 +39,6 @@
         >
           <div class="team-item__header">
             <span class="team-item__name">{{ team.name }}</span>
-            <span
-              class="team-item__status"
-              :class="team.isActive ? 'team-item__status--active' : 'team-item__status--inactive'"
-            >
-              {{ team.isActive ? 'Активная' : 'Неактивная' }}
-            </span>
           </div>
           <p class="team-item__role">Роль: {{ team.role }}</p>
           <div class="team-item__stats">
