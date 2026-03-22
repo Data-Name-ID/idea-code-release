@@ -29,6 +29,8 @@ Then run admin service:
 ```bash
 uv run python manage.py migrate --noinput
 uv run python manage.py ensure_superuser
+# required when DJANGO_DEBUG=false
+uv run python manage.py collectstatic --noinput
 uv run python manage.py runserver 0.0.0.0:8010
 ```
 

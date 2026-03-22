@@ -21,4 +21,5 @@ FROM runtime AS migrate
 CMD ["python", "manage.py", "migrate", "--noinput"]
 
 FROM runtime AS prod-admin
+RUN python manage.py collectstatic --noinput
 CMD ["sh", "-c", "python manage.py ensure_superuser && python manage.py runserver 0.0.0.0:8010"]
