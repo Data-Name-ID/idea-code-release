@@ -40,6 +40,7 @@
             title: event.title,
             date: event.date,
             cover: event.cover,
+            isVerified: event.is_verify,
             status: entry?.status ?? null,
           }
         })
@@ -153,6 +154,11 @@
                   <path d="M8 1l1.94 4.27L14.5 5.8l-3.25 3.17.77 4.49L8 11.27l-4.02 2.19.77-4.49L1.5 5.8l4.56-.53L8 1z" />
                 </svg>
                 {{ ratingStatusLabel(evt.status) }}
+              </span>
+              <span v-if="evt.isVerified" class="event-card__verify">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="11" height="11">
+                  <path fill-rule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+                </svg>
               </span>
             </div>
             <div class="event-card__body">

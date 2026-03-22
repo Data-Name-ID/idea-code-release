@@ -22,6 +22,7 @@ class EventResponse(Struct, kw_only=True):
     description: str = ""
     date: datetime
     cover: str | None = None
+    is_verify: bool = False
 
     @classmethod
     def from_model(cls, model: EventModel) -> Self:
@@ -31,7 +32,23 @@ class EventResponse(Struct, kw_only=True):
             description=model.description,
             date=model.date,
             cover=model.cover,
+            is_verify=model.is_verify,
         )
+
+
+class EventCreateRequest(Struct, kw_only=True):
+    title: str
+    description: str = ""
+    date: datetime
+    cover: str | None = None
+
+
+class EventUpdateRequest(Struct, kw_only=True):
+    title: str | None = None
+    description: str | None = None
+    date: datetime | None = None
+    cover: str | None = None
+    is_verify: bool | None = None
 
 
 class EventRatingEntryResponse(Struct, kw_only=True):
@@ -61,4 +78,12 @@ class EventRatingCreateRequest(Struct, kw_only=True):
     user_id: int
     status: EventRatingStatus
     place: int | None = None
+    team_id: int | None = None
+
+
+class EventParticipationCreateRequest(Struct, kw_only=True):
+    title: str
+    description: str = ""
+    date: datetime
+    cover: str | None = None
     team_id: int | None = None

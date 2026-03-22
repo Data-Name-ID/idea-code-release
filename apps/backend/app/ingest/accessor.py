@@ -120,6 +120,7 @@ class OrganizerIngestAccessor(BaseAccessor):
                     description=item.description,
                     date=item.date,
                     cover=item.cover,
+                    is_verify=True,
                 )
                 .returning(EventModel.id),
             )
@@ -134,6 +135,7 @@ class OrganizerIngestAccessor(BaseAccessor):
                 description=item.description,
                 date=item.date,
                 cover=item.cover,
+                is_verify=True,
             ),
         )
         counters.updated += 1

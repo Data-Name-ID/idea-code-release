@@ -5,5 +5,6 @@ export interface EventResult {
   title: string
   date: string
   cover: string | null
+  isVerified: boolean
   status: EventRatingStatus | null
 }

@@ -1,8 +1,8 @@
 import { resolveMock } from '@shared/mocks/handler'
 import type { OkResponse } from '@shared/types/api'
-import { USE_MOCKS } from '@shared/config/env'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (USE_MOCKS) {

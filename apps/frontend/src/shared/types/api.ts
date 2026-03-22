@@ -116,6 +116,7 @@ export interface EventResponse {
   description: string
   date: string // ISO 8601 datetime string
   cover: string | null
+  is_verify: boolean
 }
 
 export interface EventListResponse {
@@ -123,6 +124,14 @@ export interface EventListResponse {
   limit: number
   offset: number
   data: EventResponse[]
+}
+
+export interface EventParticipationCreateRequest {
+  title: string
+  description?: string
+  date: string
+  cover?: string | null
+  team_id?: number | null
 }
 
 export interface EventRatingEntryResponse {

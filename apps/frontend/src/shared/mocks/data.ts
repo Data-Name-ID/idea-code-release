@@ -196,6 +196,7 @@ export const MOCK_EVENTS: EventResponse[] = [
     description: '48-часовой продуктовый хакатон для команд до 5 человек.',
     date: '2024-10-15T10:00:00Z',
     cover: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&q=80',
+    is_verify: true,
   },
   {
     id: 2,
@@ -203,6 +204,7 @@ export const MOCK_EVENTS: EventResponse[] = [
     description: 'Соревнование по быстрому прототипированию цифровых продуктов.',
     date: '2024-08-20T10:00:00Z',
     cover: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=600&q=80',
+    is_verify: true,
   },
   {
     id: 3,
@@ -210,6 +212,7 @@ export const MOCK_EVENTS: EventResponse[] = [
     description: 'Трёхдневный интенсив для создания стартапов с нуля.',
     date: '2024-06-08T10:00:00Z',
     cover: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80',
+    is_verify: true,
   },
   {
     id: 4,
@@ -217,6 +220,7 @@ export const MOCK_EVENTS: EventResponse[] = [
     description: 'Университетский хакатон с фокусом на EdTech и AI-решения.',
     date: '2024-05-03T10:00:00Z',
     cover: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&q=80',
+    is_verify: true,
   },
 ]
 
