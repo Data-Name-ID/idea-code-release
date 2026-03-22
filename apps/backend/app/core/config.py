@@ -93,7 +93,9 @@ class ObjectStorageConfig(msgspec.Struct, kw_only=True, frozen=True):
     secure: bool = False
     bucket: str = "avatars"
     public_base_url: str = "http://localhost:9000"
-    public_include_bucket: bool | None = None
+    public_include_bucket: bool = True
+    auto_create_bucket: bool = True
+    set_public_read_policy: bool = True
     max_upload_size_mb: int = 5
 
 

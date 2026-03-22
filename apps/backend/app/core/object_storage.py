@@ -2,7 +2,6 @@ import asyncio
 import io
 import json
 from pathlib import Path
-from urllib.parse import urlparse
 from uuid import uuid4
 
 from litestar.datastructures import UploadFile
@@ -64,74 +63,36 @@ class ObjectStorageService:
             return
 
         bucket = self._config.bucket
-        try:
-            exists = await asyncio.to_thread(self._client.bucket_exists, bucket)
-        except S3Error as exc:
-            # In external S3 setups list/read bucket metadata can be forbidden,
-            # while PutObject is still allowed for a pre-created bucket.
-            if exc.code in {"AccessDenied", "MethodNotAllowed", "NotImplemented"}:
-                self._bucket_ready = True
-                return
-            raise
-
-        if not exists:
+        exists = await asyncio.to_thread(self._client.bucket_exists, bucket)
+        if not exists and self._config.auto_create_bucket:
             try:
                 await asyncio.to_thread(self._client.make_bucket, bucket)
             except S3Error as exc:
-                if exc.code not in {
-                    "BucketAlreadyOwnedByYou",
-                    "BucketAlreadyExists",
-                    "AccessDenied",
-                }:
+                if exc.code not in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
                     raise
 
-        policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"AWS": ["*"]},
-                    "Action": ["s3:GetObject"],
-                    "Resource": [f"arn:aws:s3:::{bucket}/*"],
-                },
-            ],
-        }
-        try:
+        if self._config.set_public_read_policy:
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"AWS": ["*"]},
+                        "Action": ["s3:GetObject"],
+                        "Resource": [f"arn:aws:s3:::{bucket}/*"],
+                    },
+                ],
+            }
             await asyncio.to_thread(
                 self._client.set_bucket_policy,
                 bucket,
                 json.dumps(policy),
             )
-        except S3Error as exc:
-            if exc.code not in {
-                "AccessDenied",
-                "MethodNotAllowed",
-                "NotImplemented",
-                "MalformedPolicy",
-            }:
-                raise
 
         self._bucket_ready = True
 
     def _build_public_url(self, *, object_name: str) -> str:
         base_url = self._config.public_base_url.rstrip("/")
-        bucket = self._config.bucket
-        include_bucket = self._config.public_include_bucket
-
-        if include_bucket is True:
-            return f"{base_url}/{bucket}/{object_name}"
-        if include_bucket is False:
-            return f"{base_url}/{object_name}"
-
-        parsed = urlparse(base_url)
-        host = parsed.netloc.lower()
-        path = parsed.path.rstrip("/")
-        bucket_marker = f"/{bucket}".lower()
-
-        bucket_in_host = host.startswith(f"{bucket.lower()}.")
-        bucket_in_path = path.lower() == bucket_marker or path.lower().endswith(
-            bucket_marker,
-        )
-        if bucket_in_host or bucket_in_path:
-            return f"{base_url}/{object_name}"
-        return f"{base_url}/{bucket}/{object_name}"
+        if self._config.public_include_bucket:
+            return f"{base_url}/{self._config.bucket}/{object_name}"
+        return f"{base_url}/{object_name}"
