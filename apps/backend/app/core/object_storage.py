@@ -116,6 +116,12 @@ class ObjectStorageService:
     def _build_public_url(self, *, object_name: str) -> str:
         base_url = self._config.public_base_url.rstrip("/")
         bucket = self._config.bucket
+        include_bucket = self._config.public_include_bucket
+
+        if include_bucket is True:
+            return f"{base_url}/{bucket}/{object_name}"
+        if include_bucket is False:
+            return f"{base_url}/{object_name}"
 
         parsed = urlparse(base_url)
         host = parsed.netloc.lower()

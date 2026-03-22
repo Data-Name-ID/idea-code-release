@@ -310,11 +310,6 @@
         </div>
 
         <div class="field">
-          <label class="field__label">URL аватара</label>
-          <input v-model="form.avatar" type="url" class="field__input" placeholder="https://…" />
-        </div>
-
-        <div class="field">
           <label class="field__label">Имя <span class="required">*</span></label>
           <input v-model="form.name" type="text" class="field__input" required placeholder="Ваше имя" />
         </div>
