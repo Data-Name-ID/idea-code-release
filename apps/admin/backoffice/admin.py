@@ -82,7 +82,7 @@ class TeamAdmin(ReadOnlyAdmin):
     def get_queryset(self, request: HttpRequest) -> QuerySet[Team]:
         return super().get_queryset(request).prefetch_related("users")
 
-    @admin.display(description="Members")
+    @admin.display(description="Участники")
     def member_count(self, obj: Team) -> int:
         return obj.users.count()
 
@@ -128,13 +128,13 @@ class EventAdmin(ModelAdmin):
     actions = ("mark_verified", "mark_unverified")
     ordering = ("-date",)
 
-    @admin.display(description="Verification")
+    @admin.display(description="Верификация")
     def verify_badge(self, obj: Event) -> str:
         if obj.is_verify:
-            return _status_badge("Verified", "#16a34a")
-        return _status_badge("Not verified", "#6b7280")
+            return _status_badge("Проверено", "#16a34a")
+        return _status_badge("Не проверено", "#6b7280")
 
-    @admin.action(description="Mark selected events as verified")
+    @admin.action(description="Отметить выбранные события как проверенные")
     def mark_verified(
         self,
         request: HttpRequest,
@@ -143,11 +143,11 @@ class EventAdmin(ModelAdmin):
         updated = queryset.exclude(is_verify=True).update(is_verify=True)
         self.message_user(
             request,
-            f"Marked {updated} event(s) as verified.",
+            f"Событий отмечено как проверенные: {updated}.",
             level=messages.SUCCESS,
         )
 
-    @admin.action(description="Mark selected events as not verified")
+    @admin.action(description="Снять верификацию с выбранных событий")
     def mark_unverified(
         self,
         request: HttpRequest,
@@ -156,7 +156,7 @@ class EventAdmin(ModelAdmin):
         updated = queryset.exclude(is_verify=False).update(is_verify=False)
         self.message_user(
             request,
-            f"Marked {updated} event(s) as not verified.",
+            f"Событий переведено в статус непроверенных: {updated}.",
             level=messages.SUCCESS,
         )
 
@@ -187,15 +187,15 @@ class ParticipationApplicationAdmin(ModelAdmin):
     actions = ("approve_selected", "reject_selected", "mark_pending")
     ordering = ("-created_at",)
 
-    @admin.display(description="Status")
+    @admin.display(description="Статус")
     def status_badge(self, obj: ParticipationApplication) -> str:
         if obj.status == ParticipationApplication.Status.APPROVED:
-            return _status_badge("Approved", "#16a34a")
+            return _status_badge("Одобрена", "#16a34a")
         if obj.status == ParticipationApplication.Status.REJECTED:
-            return _status_badge("Rejected", "#dc2626")
-        return _status_badge("Pending", "#f59e0b")
+            return _status_badge("Отклонена", "#dc2626")
+        return _status_badge("На модерации", "#f59e0b")
 
-    @admin.action(description="Approve selected applications")
+    @admin.action(description="Одобрить выбранные заявки")
     def approve_selected(
         self,
         request: HttpRequest,
@@ -206,11 +206,11 @@ class ParticipationApplicationAdmin(ModelAdmin):
         ).update(status=ParticipationApplication.Status.APPROVED)
         self.message_user(
             request,
-            f"Approved {updated} application(s).",
+            f"Заявок одобрено: {updated}.",
             level=messages.SUCCESS,
         )
 
-    @admin.action(description="Reject selected applications")
+    @admin.action(description="Отклонить выбранные заявки")
     def reject_selected(
         self,
         request: HttpRequest,
@@ -221,11 +221,11 @@ class ParticipationApplicationAdmin(ModelAdmin):
         ).update(status=ParticipationApplication.Status.REJECTED)
         self.message_user(
             request,
-            f"Rejected {updated} application(s).",
+            f"Заявок отклонено: {updated}.",
             level=messages.SUCCESS,
         )
 
-    @admin.action(description="Move selected applications to pending")
+    @admin.action(description="Вернуть выбранные заявки на модерацию")
     def mark_pending(
         self,
         request: HttpRequest,
@@ -236,7 +236,7 @@ class ParticipationApplicationAdmin(ModelAdmin):
         ).update(status=ParticipationApplication.Status.PENDING)
         self.message_user(
             request,
-            f"Moved {updated} application(s) to pending.",
+            f"Заявок возвращено в статус 'На модерации': {updated}.",
             level=messages.SUCCESS,
         )
 
@@ -271,19 +271,19 @@ class OrganizerAPITokenAdmin(ModelAdmin):
     actions = ("activate_selected", "deactivate_selected")
     ordering = ("name",)
 
-    @admin.display(description="Token hash")
+    @admin.display(description="Хэш токена")
     def token_hash_short(self, obj: OrganizerAPIToken) -> str:
         if len(obj.token_hash) <= TOKEN_HASH_VISIBLE_LENGTH:
             return obj.token_hash
         return f"{obj.token_hash[:8]}...{obj.token_hash[-8:]}"
 
-    @admin.display(description="Active")
+    @admin.display(description="Статус")
     def active_badge(self, obj: OrganizerAPIToken) -> str:
         if obj.is_active:
-            return _status_badge("Active", "#16a34a")
-        return _status_badge("Inactive", "#6b7280")
+            return _status_badge("Активен", "#16a34a")
+        return _status_badge("Отключен", "#6b7280")
 
-    @admin.action(description="Activate selected tokens")
+    @admin.action(description="Активировать выбранные токены")
     def activate_selected(
         self,
         request: HttpRequest,
@@ -292,11 +292,11 @@ class OrganizerAPITokenAdmin(ModelAdmin):
         updated = queryset.exclude(is_active=True).update(is_active=True)
         self.message_user(
             request,
-            f"Activated {updated} token(s).",
+            f"Токенов активировано: {updated}.",
             level=messages.SUCCESS,
         )
 
-    @admin.action(description="Deactivate selected tokens")
+    @admin.action(description="Деактивировать выбранные токены")
     def deactivate_selected(
         self,
         request: HttpRequest,
@@ -305,6 +305,6 @@ class OrganizerAPITokenAdmin(ModelAdmin):
         updated = queryset.exclude(is_active=False).update(is_active=False)
         self.message_user(
             request,
-            f"Deactivated {updated} token(s).",
+            f"Токенов деактивировано: {updated}.",
             level=messages.SUCCESS,
         )

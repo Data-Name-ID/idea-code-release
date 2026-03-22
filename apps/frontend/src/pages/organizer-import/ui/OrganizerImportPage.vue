@@ -601,15 +601,15 @@
     color: $color-text-secondary;
   }
 
-  input,
+  input[type='text'],
+  input[type='password'],
+  input[type='number'],
+  input:not([type]),
   select,
   textarea {
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    background: -bg-elevated;
-    color: $color-text-primary;
-    padding: 10px;
-    font: inherit;
+    @include field-control;
+    background: $color-bg-elevated;
+    min-height: 40px;
   }
 
   .upload-zone {
@@ -680,6 +680,13 @@
     gap: 8px;
     color: $color-text-primary;
     font-size: 13px;
+
+    input[type='radio'] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: $color-accent;
+    }
   }
 
   .template-actions {

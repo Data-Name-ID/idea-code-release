@@ -91,7 +91,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ru"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
@@ -103,9 +103,9 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 UNFOLD = {
-    "SITE_TITLE": "Idea Code Admin",
-    "SITE_HEADER": "Idea Code Admin",
-    "SITE_SUBHEADER": "Moderation Console",
+    "SITE_TITLE": "Idea Code Админка",
+    "SITE_HEADER": "Idea Code Админка",
+    "SITE_SUBHEADER": "Панель модерации",
     "SITE_SYMBOL": "admin_panel_settings",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,
@@ -114,69 +114,69 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Moderation",
+                "title": "Модерация",
                 "separator": True,
                 "items": [
                     {
-                        "title": "Participation Applications",
+                        "title": "Заявки на участие",
                         "icon": "assignment",
                         "link": "admin:backoffice_participationapplication_changelist",
                     },
                     {
-                        "title": "Events",
+                        "title": "События",
                         "icon": "event",
                         "link": "admin:backoffice_event_changelist",
                     },
                 ],
             },
             {
-                "title": "Reference Data",
+                "title": "Справочники",
                 "separator": True,
                 "items": [
                     {
-                        "title": "Roles",
+                        "title": "Роли",
                         "icon": "badge",
                         "link": "admin:backoffice_role_changelist",
                     },
                     {
-                        "title": "Skills",
+                        "title": "Навыки",
                         "icon": "psychology",
                         "link": "admin:backoffice_skill_changelist",
                     },
                 ],
             },
             {
-                "title": "Integrations",
+                "title": "Интеграции",
                 "separator": True,
                 "items": [
                     {
-                        "title": "Organizer API Tokens",
+                        "title": "API-токены организаторов",
                         "icon": "key",
                         "link": "admin:backoffice_organizerapitoken_changelist",
                     },
                 ],
             },
             {
-                "title": "Read-only Views",
+                "title": "Только просмотр",
                 "separator": True,
                 "items": [
                     {
-                        "title": "Users",
+                        "title": "Пользователи",
                         "icon": "group",
                         "link": "admin:backoffice_user_changelist",
                     },
                     {
-                        "title": "Teams",
+                        "title": "Команды",
                         "icon": "groups",
                         "link": "admin:backoffice_team_changelist",
                     },
                     {
-                        "title": "Event Ratings",
+                        "title": "Рейтинги событий",
                         "icon": "workspace_premium",
                         "link": "admin:backoffice_admineventrating_changelist",
                     },
                     {
-                        "title": "Telegram Identities",
+                        "title": "Telegram-аккаунты",
                         "icon": "send",
                         "link": "admin:backoffice_telegramidentity_changelist",
                     },

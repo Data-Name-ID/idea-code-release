@@ -145,13 +145,13 @@ class Event(UnmanagedModel):
 
 class ParticipationApplication(UnmanagedModel):
     class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
-        APPROVED = "approved", "Approved"
-        REJECTED = "rejected", "Rejected"
+        PENDING = "pending", "На модерации"
+        APPROVED = "approved", "Одобрена"
+        REJECTED = "rejected", "Отклонена"
 
     class PreferredTeamFormat(models.TextChoices):
-        SOLO = "solo", "Solo"
-        TEAM = "team", "Team"
+        SOLO = "solo", "Соло"
+        TEAM = "team", "Команда"
 
     id = models.IntegerField(primary_key=True)
     applicant = models.ForeignKey(
@@ -227,9 +227,9 @@ class OrganizerAPIToken(UnmanagedModel):
 
 class AdminEventRating(UnmanagedModel):
     class Status(models.TextChoices):
-        WINNER = "winner", "Winner"
-        PRIZE_WINNER = "prize_winner", "Prize winner"
-        PARTICIPANT = "participant", "Participant"
+        WINNER = "winner", "Победитель"
+        PRIZE_WINNER = "prize_winner", "Призер"
+        PARTICIPANT = "participant", "Участник"
 
     id = models.CharField(max_length=64, primary_key=True)
     event = models.ForeignKey("Event", models.DO_NOTHING, db_column="event_id")
