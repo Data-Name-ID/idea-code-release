@@ -8,6 +8,7 @@ from uuid import uuid4
 from litestar.datastructures import UploadFile
 from litestar.exceptions import ClientException
 from minio import Minio
+from minio.error import S3Error
 
 from app.core.config import ObjectStorageConfig
 
@@ -63,9 +64,26 @@ class ObjectStorageService:
             return
 
         bucket = self._config.bucket
-        exists = await asyncio.to_thread(self._client.bucket_exists, bucket)
+        try:
+            exists = await asyncio.to_thread(self._client.bucket_exists, bucket)
+        except S3Error as exc:
+            # In external S3 setups list/read bucket metadata can be forbidden,
+            # while PutObject is still allowed for a pre-created bucket.
+            if exc.code in {"AccessDenied", "MethodNotAllowed", "NotImplemented"}:
+                self._bucket_ready = True
+                return
+            raise
+
         if not exists:
-            await asyncio.to_thread(self._client.make_bucket, bucket)
+            try:
+                await asyncio.to_thread(self._client.make_bucket, bucket)
+            except S3Error as exc:
+                if exc.code not in {
+                    "BucketAlreadyOwnedByYou",
+                    "BucketAlreadyExists",
+                    "AccessDenied",
+                }:
+                    raise
 
         policy = {
             "Version": "2012-10-17",
@@ -78,11 +96,20 @@ class ObjectStorageService:
                 },
             ],
         }
-        await asyncio.to_thread(
-            self._client.set_bucket_policy,
-            bucket,
-            json.dumps(policy),
-        )
+        try:
+            await asyncio.to_thread(
+                self._client.set_bucket_policy,
+                bucket,
+                json.dumps(policy),
+            )
+        except S3Error as exc:
+            if exc.code not in {
+                "AccessDenied",
+                "MethodNotAllowed",
+                "NotImplemented",
+                "MalformedPolicy",
+            }:
+                raise
 
         self._bucket_ready = True
 
