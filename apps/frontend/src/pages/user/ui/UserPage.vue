@@ -7,6 +7,7 @@
   import type { ActivityFilter } from '@widgets/ActivityFeed/model/types'
 
   import UserProfileCard from '@widgets/UserProfileCard/ui/UserProfileCard.vue'
+  import ProfileContactsCard from '@widgets/ProfileContactsCard/ui/ProfileContactsCard.vue'
   import SpecializationCard from '@widgets/SpecializationCard/ui/SpecializationCard.vue'
   import ActivityFeed from '@widgets/ActivityFeed/ui/ActivityFeed.vue'
   import TeamsCard from '@widgets/TeamsCard/ui/TeamsCard.vue'
@@ -75,6 +76,14 @@
         </aside>
 
         <main class="profile-main">
+          <div class="main-section">
+            <ProfileContactsCard
+              title="Контакты и ссылки"
+              :email="user.email"
+              :location="user.location"
+              :links="user.links"
+            />
+          </div>
           <div class="main-section">
             <ActivityFeed
               :items="activityItems"

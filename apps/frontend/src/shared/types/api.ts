@@ -139,12 +139,17 @@ export interface TeamShortResponse {
   id: number
   name: string
   description: string
+  avatar: string | null
 }
 
 export interface TeamResponse {
   id: number
   name: string
   description: string
+  avatar: string | null
+  location: string
+  links: LinkResponse[]
+  captain_user_id: number | null
   users: UserShortResponse[]
   events: EventResponse[]
 }
@@ -162,6 +167,40 @@ export interface TeamsListParams {
   search?: string
   event_id?: number
   user_id?: number
+}
+
+export interface TeamCreateRequest {
+  name: string
+  description?: string
+  avatar?: string | null
+  location?: string
+  links?: LinkRequest[]
+  user_ids?: number[]
+}
+
+export interface TeamUpdateRequest {
+  name?: string | null
+  description?: string | null
+  avatar?: string | null
+  location?: string | null
+  links?: LinkRequest[] | null
+}
+
+export interface TeamInviteCreateRequest {
+  expires_in_hours?: number
+}
+
+export interface TeamInviteCreateResponse {
+  token: string
+  expires_at: string
+}
+
+export interface TeamJoinByInviteRequest {
+  token: string
+}
+
+export interface TeamTransferCaptainRequest {
+  new_captain_user_id: number
 }
 
 // ─── Auth ─────────────────────────────────────────────────

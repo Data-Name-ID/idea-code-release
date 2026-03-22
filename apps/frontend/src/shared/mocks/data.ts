@@ -272,6 +272,13 @@ export const MOCK_TEAMS: TeamResponse[] = [
     id: 1,
     name: 'Binary Wolves',
     description: 'Команда Full-Stack и ML разработчиков.',
+    avatar: null,
+    location: 'Москва, Россия',
+    links: [
+      { url: 'https://github.com/binary-wolves', label: 'GitHub', type: 'github' as LinkType },
+      { url: 'https://t.me/binary_wolves', label: 'Telegram', type: 'telegram' as LinkType },
+    ],
+    captain_user_id: 1,
     users: [_users[0], _users[1], _users[2], _users[3], _users[4]].map(
       ({ id, username, name, avatar, location, roles, skills }) => ({
         id, username, name, avatar, location, roles, skills,
@@ -283,6 +290,10 @@ export const MOCK_TEAMS: TeamResponse[] = [
     id: 2,
     name: 'Neural Nomads',
     description: 'ML-инженеры и дата-сайентисты.',
+    avatar: null,
+    location: 'Казань, Россия',
+    links: [{ url: 'https://github.com/neural-nomads', label: 'GitHub', type: 'github' as LinkType }],
+    captain_user_id: 2,
     users: [_users[0], _users[1], _users[2], _users[4]].map(
       ({ id, username, name, avatar, location, roles, skills }) => ({
         id, username, name, avatar, location, roles, skills,
@@ -294,6 +305,10 @@ export const MOCK_TEAMS: TeamResponse[] = [
     id: 3,
     name: 'Code Pirates',
     description: 'Backend и DevOps энтузиасты.',
+    avatar: null,
+    location: 'Санкт-Петербург, Россия',
+    links: [{ url: 'https://t.me/code_pirates', label: 'Telegram', type: 'telegram' as LinkType }],
+    captain_user_id: 3,
     users: [_users[0], _users[1], _users[2], _users[3]].map(
       ({ id, username, name, avatar, location, roles, skills }) => ({
         id, username, name, avatar, location, roles, skills,
@@ -307,5 +322,5 @@ export const MOCK_TEAMS_LIST: TeamListResponse = {
   total: MOCK_TEAMS.length,
   limit: 20,
   offset: 0,
-  data: MOCK_TEAMS.map(({ id, name, description }) => ({ id, name, description })),
+  data: MOCK_TEAMS.map(({ id, name, description, avatar }) => ({ id, name, description, avatar })),
 }

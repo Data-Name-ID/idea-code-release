@@ -210,6 +210,7 @@ class OrganizerIngestAccessor(BaseAccessor):
                     external_id=external_id,
                     name=item.name,
                     description=item.description,
+                    captain_user_id=member_ids[0] if member_ids else None,
                 )
                 .returning(TeamModel.id),
             )

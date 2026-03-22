@@ -1,60 +1,267 @@
 <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue'
+  import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
 
   import { teamApi } from '@entities/team/api'
   import { eventApi } from '@entities/event/api'
-  import { formatDateLong, initials, ratingStatusLabel } from '@shared/lib/format'
-  import type { EventRatingStatus } from '@shared/types/api'
-  import type { EventResult } from '../model/types'
+  import { authState } from '@shared/auth/session'
+  import { formatDateLong, initials } from '@shared/lib/format'
+  import type { LinkRequest, UserResponse } from '@shared/types/api'
+  import type { ActivityFilter, ActivityItem } from '@widgets/ActivityFeed/model/types'
+
+  import UserProfileCard from '@widgets/UserProfileCard/ui/UserProfileCard.vue'
+  import ProfileContactsCard from '@widgets/ProfileContactsCard/ui/ProfileContactsCard.vue'
+  import ActivityFeed from '@widgets/ActivityFeed/ui/ActivityFeed.vue'
 
   const route = useRoute()
   const router = useRouter()
+
   const teamId = computed(() => Number(route.params.id))
+  const currentUser = computed(() => authState.currentUser.value)
 
   const team = ref<Awaited<ReturnType<typeof teamApi.getById>> | null>(null)
   const isLoading = ref(true)
   const error = ref<string | null>(null)
-  const eventResults = ref<EventResult[]>([])
-  const members = computed(() => team.value?.users ?? [])
-  const winCount = computed(
-    () => eventResults.value.filter((e) => e.status === 'winner' || e.status === 'prize_winner').length,
+
+  const activityItems = ref<ActivityItem[]>([])
+  const activityFilter = ref<ActivityFilter>('all')
+  const isLoadingActivity = ref(false)
+
+  const actionError = ref<string | null>(null)
+  const actionSuccess = ref<string | null>(null)
+
+  const showEditForm = ref(false)
+  const isSavingProfile = ref(false)
+  const editForm = reactive({
+    name: '',
+    description: '',
+    avatar: '',
+    location: '',
+    links: [] as LinkRequest[],
+  })
+
+  const inviteExpiresInHours = ref(72)
+  const isCreatingInvite = ref(false)
+  const inviteUrl = ref('')
+  const inviteExpiresAt = ref<string | null>(null)
+
+  const transferToUserId = ref('')
+  const isTransferringCaptain = ref(false)
+  const isLeavingTeam = ref(false)
+  const removingMemberId = ref<number | null>(null)
+
+  const isCaptain = computed(
+    () =>
+      team.value !== null &&
+      currentUser.value !== null &&
+      team.value.captain_user_id === currentUser.value.id,
   )
 
-  onMounted(async () => {
-    try {
-      const teamData = await teamApi.getById(teamId.value)
-      team.value = teamData
+  const isMember = computed(
+    () =>
+      team.value !== null &&
+      currentUser.value !== null &&
+      team.value.users.some((u) => u.id === currentUser.value?.id),
+  )
 
-      const ratingsArr = await Promise.all(
-        teamData.events.map((event) => eventApi.getRatings(event.id).catch(() => null)),
-      )
+  const captainName = computed(() => {
+    if (!team.value || team.value.captain_user_id == null) return null
+    const captain = team.value.users.find((u) => u.id === team.value?.captain_user_id)
+    return captain?.name ?? null
+  })
 
-      eventResults.value = teamData.events
-        .map((event, i) => {
-          const ratings = ratingsArr[i]
-          const entry = ratings?.ratings.find((r) => r.team_id === teamId.value) ?? null
-          return {
-            id: event.id,
-            title: event.title,
-            date: event.date,
-            cover: event.cover,
-            isVerified: event.is_verify,
-            status: entry?.status ?? null,
-          }
-        })
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    } catch {
-      error.value = 'Не удалось загрузить команду'
-    } finally {
-      isLoading.value = false
+  const winCount = computed(
+    () => activityItems.value.filter((item) => item.status === 'winner' || item.status === 'prize_winner').length,
+  )
+
+  const captainCandidates = computed(() => {
+    if (!team.value) return []
+    return team.value.users.filter((u) => u.id !== team.value?.captain_user_id)
+  })
+
+  const teamAsProfileUser = computed<UserResponse | null>(() => {
+    if (!team.value) return null
+    return {
+      id: team.value.id,
+      username: `team_${team.value.id}`,
+      email: null,
+      name: team.value.name,
+      avatar: team.value.avatar,
+      description: team.value.description,
+      location: team.value.location,
+      links: team.value.links,
+      roles: [],
+      skills: [],
     }
   })
 
-  function statusClass(status: EventRatingStatus | null): string {
-    if (status === 'winner') return 'event-card--winner'
-    if (status === 'prize_winner') return 'event-card--prize'
-    return ''
+  onMounted(() => {
+    loadTeam()
+  })
+
+  watch(
+    () => team.value,
+    (value) => {
+      if (!value) return
+      editForm.name = value.name
+      editForm.description = value.description
+      editForm.avatar = value.avatar ?? ''
+      editForm.location = value.location ?? ''
+      editForm.links = value.links.map((link) => ({ url: link.url, label: link.label }))
+    },
+    { immediate: true },
+  )
+
+  async function loadTeam(): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    actionError.value = null
+    actionSuccess.value = null
+
+    try {
+      const loadedTeam = await teamApi.getById(teamId.value)
+      team.value = loadedTeam
+      await loadTeamActivity(loadedTeam)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Не удалось загрузить команду'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function loadTeamActivity(teamData: NonNullable<typeof team.value>): Promise<void> {
+    isLoadingActivity.value = true
+    try {
+      const ratingsByEvent = await Promise.all(
+        teamData.events.map((event) => eventApi.getRatings(event.id).catch((): null => null)),
+      )
+
+      activityItems.value = teamData.events
+        .map((event, index) => {
+          const ratings = ratingsByEvent[index]
+          const teamEntry = ratings?.ratings.find((r) => r.team_id === teamData.id) ?? null
+          return {
+            event,
+            status: teamEntry?.status ?? null,
+            teamName: teamData.name,
+          } satisfies ActivityItem
+        })
+        .sort((a, b) => new Date(b.event.date).getTime() - new Date(a.event.date).getTime())
+    } finally {
+      isLoadingActivity.value = false
+    }
+  }
+
+  function resetMessages(): void {
+    actionError.value = null
+    actionSuccess.value = null
+  }
+
+  function addLink(): void {
+    editForm.links.push({ url: '', label: '' })
+  }
+
+  function removeLink(index: number): void {
+    editForm.links.splice(index, 1)
+  }
+
+  async function saveTeamProfile(): Promise<void> {
+    if (!team.value) return
+    resetMessages()
+    isSavingProfile.value = true
+    try {
+      const updated = await teamApi.update(team.value.id, {
+        name: editForm.name || null,
+        description: editForm.description || null,
+        avatar: editForm.avatar || null,
+        location: editForm.location || null,
+        links: editForm.links.filter((link) => link.url.trim()),
+      })
+      team.value = updated
+      actionSuccess.value = 'Профиль команды обновлён'
+      showEditForm.value = false
+    } catch (e) {
+      actionError.value = e instanceof Error ? e.message : 'Не удалось сохранить изменения'
+    } finally {
+      isSavingProfile.value = false
+    }
+  }
+
+  async function generateInvite(): Promise<void> {
+    if (!team.value) return
+    resetMessages()
+    isCreatingInvite.value = true
+    try {
+      const invite = await teamApi.createInvite(team.value.id, {
+        expires_in_hours: inviteExpiresInHours.value,
+      })
+      const url = new URL('/teams/join', window.location.origin)
+      url.searchParams.set('token', invite.token)
+      inviteUrl.value = url.toString()
+      inviteExpiresAt.value = invite.expires_at
+      actionSuccess.value = 'Ссылка приглашения создана'
+    } catch (e) {
+      actionError.value = e instanceof Error ? e.message : 'Не удалось создать приглашение'
+    } finally {
+      isCreatingInvite.value = false
+    }
+  }
+
+  async function copyInviteLink(): Promise<void> {
+    if (!inviteUrl.value) return
+    resetMessages()
+    try {
+      await navigator.clipboard.writeText(inviteUrl.value)
+      actionSuccess.value = 'Ссылка скопирована'
+    } catch {
+      actionError.value = 'Не удалось скопировать ссылку'
+    }
+  }
+
+  async function removeMember(userId: number): Promise<void> {
+    if (!team.value) return
+    resetMessages()
+    removingMemberId.value = userId
+    try {
+      team.value = await teamApi.removeMember(team.value.id, userId)
+      actionSuccess.value = 'Участник удалён из команды'
+    } catch (e) {
+      actionError.value = e instanceof Error ? e.message : 'Не удалось удалить участника'
+    } finally {
+      removingMemberId.value = null
+    }
+  }
+
+  async function transferCaptain(): Promise<void> {
+    const parsedUserId = Number(transferToUserId.value)
+    if (!team.value || !Number.isInteger(parsedUserId)) return
+    resetMessages()
+    isTransferringCaptain.value = true
+    try {
+      team.value = await teamApi.transferCaptain(team.value.id, {
+        new_captain_user_id: parsedUserId,
+      })
+      transferToUserId.value = ''
+      actionSuccess.value = 'Капитанство передано'
+    } catch (e) {
+      actionError.value = e instanceof Error ? e.message : 'Не удалось передать капитанство'
+    } finally {
+      isTransferringCaptain.value = false
+    }
+  }
+
+  async function leaveTeam(): Promise<void> {
+    if (!team.value) return
+    resetMessages()
+    isLeavingTeam.value = true
+    try {
+      await teamApi.leave(team.value.id)
+      await router.replace({ name: 'profile' })
+    } catch (e) {
+      actionError.value = e instanceof Error ? e.message : 'Не удалось выйти из команды'
+    } finally {
+      isLeavingTeam.value = false
+    }
   }
 </script>
 
@@ -70,111 +277,214 @@
       <div style="width: 36px" />
     </header>
 
-    <template v-if="isLoading">
-      <div class="page-body">
-      <div class="hero-skeleton">
-        <div class="skel skel--icon" />
-        <div class="skel skel--title" />
-        <div class="skel skel--line" />
-        <div class="skel-stats">
-          <div class="skel skel--stat" />
-          <div class="skel skel--stat" />
-        </div>
+    <div v-if="isLoading" class="profile-skeleton">
+      <div class="skel skel--avatar" />
+      <div class="skel skel--name" />
+      <div class="skel skel--roles" />
+      <div class="skel-stats">
+        <div class="skel skel--stat" />
+        <div class="skel skel--stat" />
+        <div class="skel skel--stat" />
       </div>
-      </div>
-    </template>
+    </div>
 
     <div v-else-if="error" class="state-empty">
       <p>{{ error }}</p>
     </div>
 
-    <template v-else-if="team">
-      <div class="page-body">
-      <section class="hero">
-        <div class="hero__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-          </svg>
-        </div>
-        <h1 class="hero__name">{{ team.name }}</h1>
-        <p v-if="team.description" class="hero__description">{{ team.description }}</p>
-        <div class="hero__stats">
-          <div class="stat">
-            <span class="stat__value">{{ members.length }}</span>
-            <span class="stat__label">Участников</span>
+    <template v-else-if="team && teamAsProfileUser">
+      <div class="profile-body">
+        <aside class="profile-sidebar">
+          <div class="sidebar-card">
+            <UserProfileCard
+              :user="teamAsProfileUser"
+              :hackathon-count="team.events.length"
+              :win-count="winCount"
+            />
           </div>
-          <div class="stat">
-            <span class="stat__value">{{ eventResults.length }}</span>
-            <span class="stat__label">Мероприятий</span>
+          <div class="sidebar-section">
+            <div class="captain-box">
+              <p class="captain-box__label">Капитан</p>
+              <p class="captain-box__name">{{ captainName ?? 'Не назначен' }}</p>
+            </div>
           </div>
-          <div class="stat stat--accent">
-            <span class="stat__value">{{ winCount }}</span>
-            <span class="stat__label">Побед</span>
-          </div>
-        </div>
-      </section>
+        </aside>
 
-      <section class="section">
-        <h2 class="section__title">Участники</h2>
-        <div class="member-list">
-          <div
-            v-for="member in members"
-            :key="member.id"
-            class="member"
-            role="button"
-            tabindex="0"
-            @click="router.push(`/users/${member.id}`)"
-            @keydown.enter="router.push(`/users/${member.id}`)"
-          >
-            <div class="member__avatar">
-              <img v-if="member.avatar" :src="member.avatar" :alt="member.name" />
-              <span v-else>{{ initials(member.name) }}</span>
-            </div>
-            <div class="member__info">
-              <span class="member__name">{{ member.name }}</span>
-              <span v-if="member.roles.length" class="member__roles">
-                {{ member.roles.map((r) => r.name).join(' · ') }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+        <main class="profile-main">
+          <div v-if="actionError" class="alert alert--error">{{ actionError }}</div>
+          <div v-if="actionSuccess" class="alert alert--success">{{ actionSuccess }}</div>
 
-      <section v-if="eventResults.length" class="section">
-        <h2 class="section__title">Мероприятия</h2>
-        <div class="event-list">
-          <div
-            v-for="evt in eventResults"
-            :key="evt.id"
-            class="event-card"
-            :class="statusClass(evt.status)"
-            role="button"
-            tabindex="0"
-            @click="router.push(`/events/${evt.id}`)"
-            @keydown.enter="router.push(`/events/${evt.id}`)"
-          >
-            <div class="event-card__cover">
-              <img v-if="evt.cover" :src="evt.cover" :alt="evt.title" class="event-card__img" />
-              <div v-else class="event-card__img event-card__img--placeholder" />
-              <span v-if="ratingStatusLabel(evt.status)" class="event-card__badge">
-                <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11">
-                  <path d="M8 1l1.94 4.27L14.5 5.8l-3.25 3.17.77 4.49L8 11.27l-4.02 2.19.77-4.49L1.5 5.8l4.56-.53L8 1z" />
-                </svg>
-                {{ ratingStatusLabel(evt.status) }}
-              </span>
-              <span v-if="evt.isVerified" class="event-card__verify">
-                <svg viewBox="0 0 20 20" fill="currentColor" width="11" height="11">
-                  <path fill-rule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
-                </svg>
-              </span>
+          <div class="main-section">
+            <ProfileContactsCard
+              title="Контакты и ссылки команды"
+              :location="team.location"
+              :links="team.links"
+              empty-text="Контактные данные команды не заполнены"
+            />
+          </div>
+
+          <div class="main-section">
+            <ActivityFeed
+              :items="activityItems"
+              :is-loading="isLoadingActivity"
+              :active-filter="activityFilter"
+              @filter-change="activityFilter = $event"
+              @navigate-to-event="(id) => router.push(`/events/${id}`)"
+            />
+          </div>
+
+          <div class="main-section">
+            <div class="section-head">
+              <h2 class="section-title">Участники</h2>
+              <span class="section-caption">{{ team.users.length }} в составе</span>
             </div>
-            <div class="event-card__body">
-              <h3 class="event-card__title">{{ evt.title }}</h3>
-              <span class="event-card__date">{{ formatDateLong(evt.date) }}</span>
+
+            <div class="member-list">
+              <div v-for="member in team.users" :key="member.id" class="member-card">
+                <div class="member-card__profile" role="button" tabindex="0" @click="router.push(`/users/${member.id}`)" @keydown.enter="router.push(`/users/${member.id}`)">
+                  <div class="member-card__avatar">
+                    <img v-if="member.avatar" :src="member.avatar" :alt="member.name" />
+                    <span v-else>{{ initials(member.name) }}</span>
+                  </div>
+                  <div class="member-card__info">
+                    <p class="member-card__name">{{ member.name }}</p>
+                    <p v-if="member.roles.length" class="member-card__roles">
+                      {{ member.roles.map((r) => r.name).join(' · ') }}
+                    </p>
+                    <span
+                      v-if="member.id === team.captain_user_id"
+                      class="member-card__badge"
+                    >
+                      Капитан
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  v-if="isCaptain && member.id !== team.captain_user_id"
+                  class="danger-btn"
+                  :disabled="removingMemberId === member.id"
+                  @click="removeMember(member.id)"
+                >
+                  {{ removingMemberId === member.id ? 'Удаляем…' : 'Удалить' }}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+
+          <div v-if="isCaptain" class="main-section">
+            <div class="section-head">
+              <h2 class="section-title">Управление командой</h2>
+            </div>
+
+            <div class="management">
+              <button class="secondary-btn" @click="showEditForm = !showEditForm">
+                {{ showEditForm ? 'Скрыть форму редактирования' : 'Редактировать профиль команды' }}
+              </button>
+
+              <form v-if="showEditForm" class="edit-form" @submit.prevent="saveTeamProfile">
+                <label class="field">
+                  <span class="field__label">Название</span>
+                  <input v-model="editForm.name" type="text" class="field__input" required />
+                </label>
+
+                <label class="field">
+                  <span class="field__label">Описание</span>
+                  <textarea
+                    v-model="editForm.description"
+                    class="field__input field__input--textarea"
+                    rows="3"
+                  />
+                </label>
+
+                <label class="field">
+                  <span class="field__label">URL аватара</span>
+                  <input v-model="editForm.avatar" type="url" class="field__input" />
+                </label>
+
+                <label class="field">
+                  <span class="field__label">Локация</span>
+                  <input v-model="editForm.location" type="text" class="field__input" />
+                </label>
+
+                <div class="field">
+                  <span class="field__label">Ссылки</span>
+                  <div v-for="(link, index) in editForm.links" :key="index" class="link-row">
+                    <input v-model="editForm.links[index].url" type="url" class="field__input" placeholder="https://..." />
+                    <input v-model="editForm.links[index].label" type="text" class="field__input" placeholder="Название" />
+                    <button type="button" class="remove-btn" @click="removeLink(index)">
+                      Удалить
+                    </button>
+                  </div>
+                  <button type="button" class="secondary-btn" @click="addLink">
+                    + Добавить ссылку
+                  </button>
+                </div>
+
+                <button type="submit" class="primary-btn" :disabled="isSavingProfile">
+                  {{ isSavingProfile ? 'Сохраняем…' : 'Сохранить изменения' }}
+                </button>
+              </form>
+
+              <div class="invite-box">
+                <label class="field">
+                  <span class="field__label">Время жизни ссылки (часы)</span>
+                  <input
+                    v-model.number="inviteExpiresInHours"
+                    type="number"
+                    min="1"
+                    max="720"
+                    class="field__input"
+                  />
+                </label>
+                <button class="primary-btn" :disabled="isCreatingInvite" @click="generateInvite">
+                  {{ isCreatingInvite ? 'Создаём…' : 'Создать ссылку приглашения' }}
+                </button>
+                <div v-if="inviteUrl" class="invite-result">
+                  <p class="invite-result__label">
+                    Ссылка активна до {{ inviteExpiresAt ? formatDateLong(inviteExpiresAt) : 'указанного времени' }}
+                  </p>
+                  <div class="invite-result__row">
+                    <input :value="inviteUrl" class="field__input" readonly />
+                    <button class="secondary-btn" @click="copyInviteLink">Копировать</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="transfer-box">
+                <label class="field">
+                  <span class="field__label">Передать капитанство</span>
+                  <select v-model="transferToUserId" class="field__input">
+                    <option value="" disabled>Выберите участника</option>
+                    <option
+                      v-for="member in captainCandidates"
+                      :key="member.id"
+                      :value="String(member.id)"
+                    >
+                      {{ member.name }}
+                    </option>
+                  </select>
+                </label>
+                <button
+                  class="danger-btn"
+                  :disabled="!transferToUserId || isTransferringCaptain"
+                  @click="transferCaptain"
+                >
+                  {{ isTransferringCaptain ? 'Передаём…' : 'Передать капитанство' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="isMember" class="main-section">
+            <div class="section-head">
+              <h2 class="section-title">Участие в команде</h2>
+            </div>
+            <button class="danger-btn" :disabled="isLeavingTeam" @click="leaveTeam">
+              {{ isLeavingTeam ? 'Выходим…' : 'Выйти из команды' }}
+            </button>
+          </div>
+        </main>
       </div>
     </template>
   </div>
@@ -198,265 +508,324 @@
     @include back-button;
   }
 
-  .page-body {
+  .profile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px 16px 48px;
+
     @include respond-to('lg') {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 24px;
       max-width: 1200px;
       margin: 0 auto;
       padding: 32px 32px 64px;
-      display: flex;
-      flex-direction: column;
+    }
+  }
+
+  .profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    @include respond-to('lg') {
+      width: 320px;
+      flex-shrink: 0;
+      gap: 16px;
+    }
+  }
+
+  .sidebar-card {
+    @include respond-to('lg') {
+      border: 1px solid $color-border;
+      border-radius: $radius-2xl;
+      background: #141417;
+    }
+  }
+
+  .sidebar-section {
+    @include respond-to('lg') {
+      background: #1a1a1d;
+      border: 1px solid rgba($color-accent, 0.2);
+      border-radius: $radius-2xl;
+      padding: 16px;
+    }
+  }
+
+  .captain-box {
+    @include flex-column(4px);
+  }
+
+  .captain-box__label {
+    margin: 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $color-text-secondary;
+  }
+
+  .captain-box__name {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .profile-main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+
+    @include respond-to('lg') {
+      flex: 1;
       gap: 24px;
     }
   }
 
-  .hero {
-    @include flex-column(10px);
-    align-items: center;
-    padding: 32px 16px 24px;
-    border-bottom: 1px solid $color-border;
-
+  .main-section {
     @include respond-to('lg') {
-      padding: 40px 48px;
       background: #141417;
       border: 1px solid $color-border;
       border-radius: $radius-2xl;
-    }
-  }
-
-  .hero__icon {
-    width: 80px;
-    height: 80px;
-    border-radius: $radius-3xl;
-    background: rgba($color-accent, 0.12);
-    border: 1px solid rgba($color-accent, 0.3);
-    @include flex-center;
-    color: $color-accent;
-  }
-
-  .hero__name {
-    margin: 4px 0 0;
-    font-size: 24px;
-    font-weight: 800;
-    text-align: center;
-  }
-
-  .hero__description {
-    margin: 0;
-    font-size: 14px;
-    color: $color-text-secondary;
-    text-align: center;
-    line-height: 1.5;
-  }
-
-  .hero__stats {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  .stat {
-    @include flex-column(2px);
-    align-items: center;
-    padding: 10px 20px;
-    border: 1px solid $color-border;
-    border-radius: $radius-lg;
-    min-width: 72px;
-
-    &--accent .stat__value { color: $color-accent; }
-  }
-
-  .stat__value {
-    font-size: 20px;
-    font-weight: 800;
-  }
-
-  .stat__label {
-    font-size: 11px;
-    color: $color-text-secondary;
-    white-space: nowrap;
-  }
-
-  .section {
-    padding: 20px 16px;
-    @include flex-column(12px);
-    border-bottom: 1px solid $color-border;
-
-    @include respond-to('lg') {
       padding: 28px 32px;
-      background: #141417;
-      border: 1px solid $color-border;
-      border-radius: $radius-2xl;
     }
   }
 
-  .section__title {
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .section-title {
     margin: 0;
     font-size: 17px;
     font-weight: 700;
   }
 
-  .member-list {
-    @include flex-column(8px);
-
-    @include respond-to('lg') {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
+  .section-caption {
+    font-size: 13px;
+    color: $color-text-secondary;
   }
 
-  .member {
+  .alert {
+    border-radius: $radius-md;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .alert--error {
+    background: rgba($color-danger, 0.15);
+    border: 1px solid rgba($color-danger, 0.4);
+    color: #f87171;
+  }
+
+  .alert--success {
+    background: rgba($color-accent, 0.15);
+    border: 1px solid rgba($color-accent, 0.4);
+    color: #9ce6b3;
+  }
+
+  .member-list {
+    @include flex-column(10px);
+  }
+
+  .member-card {
+    border: 1px solid $color-border;
+    border-radius: $radius-xl;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .member-card__profile {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
-    border-radius: $radius-lg;
-    border: 1px solid $color-border;
-    background: $color-surface;
-    @include card-interactive;
+    min-width: 0;
+    flex: 1;
   }
 
-  .member__avatar {
+  .member-card__avatar {
     width: 42px;
     height: 42px;
     border-radius: 50%;
+    overflow: hidden;
     background: #2a2a2a;
     @include flex-center;
-    font-size: 14px;
     font-weight: 700;
     color: $color-text-secondary;
-    flex-shrink: 0;
-    overflow: hidden;
 
-    img { width: 100%; height: 100%; object-fit: cover; }
-  }
-
-  .member__info {
-    @include flex-column(2px);
-    min-width: 0;
-  }
-
-  .member__name {
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .member__roles {
-    font-size: 12px;
-    color: $color-text-secondary;
-    @include text-ellipsis;
-  }
-
-  .event-list {
-    @include flex-column(10px);
-
-    @include respond-to('lg') {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
   }
 
-  .event-card {
-    border: 1px solid $color-border;
-    border-radius: $radius-2xl;
-    overflow: hidden;
-    @include card-interactive;
-
-    &--winner { border-color: $color-gold; }
-    &--prize  { border-color: $color-silver; }
+  .member-card__info {
+    min-width: 0;
   }
 
-  .event-card__cover {
-    position: relative;
-    height: 120px;
-    background: #1e1e1e;
-  }
-
-  .event-card__img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-
-    &--placeholder { background: #2a2a2a; }
-  }
-
-  .event-card__badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 9px;
-    border-radius: $radius-full;
-    background: rgba($color-gold, 0.9);
-    font-size: 11px;
-    font-weight: 700;
-    color: #1a1400;
-  }
-
-  .event-card--prize .event-card__badge {
-    background: rgba($color-silver, 0.9);
-    color: #0d0f11;
-  }
-
-  .event-card__verify {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    @include flex-center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba($color-bg, 0.8);
-    backdrop-filter: blur(6px);
-    color: $color-success;
-  }
-
-  .event-card__body {
-    padding: 10px 14px 12px;
-    @include flex-between;
-    align-items: baseline;
-    gap: 8px;
-  }
-
-  .event-card__title {
+  .member-card__name {
     margin: 0;
     font-size: 15px;
     font-weight: 700;
-    flex: 1;
-    min-width: 0;
-    @include text-ellipsis;
   }
 
-  .event-card__date {
+  .member-card__roles {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: $color-text-secondary;
+  }
+
+  .member-card__badge {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: $color-accent;
+    border: 1px solid rgba($color-accent, 0.6);
+    border-radius: $radius-full;
+    padding: 3px 8px;
+  }
+
+  .management {
+    @include flex-column(14px);
+  }
+
+  .edit-form {
+    @include flex-column(12px);
+    border: 1px solid $color-border;
+    border-radius: $radius-xl;
+    padding: 14px;
+  }
+
+  .field {
+    @include flex-column(6px);
+  }
+
+  .field__label {
+    font-size: 13px;
+    color: $color-text-secondary;
+  }
+
+  .field__input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+    background: #0f1012;
+    color: $color-text-primary;
+    font-size: 14px;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $color-accent;
+    }
+  }
+
+  .field__input--textarea {
+    resize: vertical;
+    min-height: 88px;
+  }
+
+  .link-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+  }
+
+  .primary-btn,
+  .secondary-btn,
+  .danger-btn {
+    border: 1px solid transparent;
+    border-radius: $radius-full;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity $transition-fast, border-color $transition-fast, color $transition-fast;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+  }
+
+  .primary-btn {
+    background: $color-accent;
+    color: #fff;
+  }
+
+  .secondary-btn {
+    border-color: $color-border;
+    background: transparent;
+    color: $color-text-primary;
+  }
+
+  .danger-btn {
+    border-color: rgba($color-danger, 0.5);
+    background: rgba($color-danger, 0.1);
+    color: #f87171;
+  }
+
+  .remove-btn {
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    background: transparent;
+    color: $color-text-secondary;
+    font-size: 12px;
+    padding: 0 10px;
+    cursor: pointer;
+  }
+
+  .invite-box,
+  .transfer-box {
+    border: 1px solid $color-border;
+    border-radius: $radius-xl;
+    padding: 14px;
+    @include flex-column(10px);
+  }
+
+  .invite-result__label {
+    margin: 0;
     font-size: 12px;
     color: $color-text-secondary;
-    flex-shrink: 0;
   }
 
-  .hero-skeleton {
-    @include flex-column(12px);
+  .invite-result__row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
     align-items: center;
-    padding: 32px 16px 24px;
+  }
+
+  .profile-skeleton {
+    @include flex-column(14px);
+    align-items: center;
+    padding: 32px 16px;
   }
 
   .skel-stats {
     display: flex;
     gap: 8px;
-    margin-top: 4px;
   }
 
   .skel {
     border-radius: $radius-sm;
     @include skeleton-shimmer;
 
-    &--icon  { width: 80px; height: 80px; border-radius: $radius-3xl; }
-    &--title { height: 28px; width: 160px; }
-    &--line  { height: 14px; width: 220px; }
-    &--stat  { height: 58px; width: 80px; border-radius: $radius-lg; }
+    &--avatar { width: 88px; height: 88px; border-radius: 50%; }
+    &--name   { height: 24px; width: 160px; }
+    &--roles  { height: 16px; width: 200px; }
+    &--stat   { height: 60px; width: 72px; border-radius: $radius-lg; }
   }
 
   .state-empty {

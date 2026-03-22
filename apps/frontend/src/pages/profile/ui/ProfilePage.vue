@@ -6,6 +6,7 @@
   import type { ActivityFilter } from '@widgets/ActivityFeed/model/types'
 
   import UserProfileCard from '@widgets/UserProfileCard/ui/UserProfileCard.vue'
+  import ProfileContactsCard from '@widgets/ProfileContactsCard/ui/ProfileContactsCard.vue'
   import SpecializationCard from '@widgets/SpecializationCard/ui/SpecializationCard.vue'
   import ActivityFeed from '@widgets/ActivityFeed/ui/ActivityFeed.vue'
   import TeamsCard from '@widgets/TeamsCard/ui/TeamsCard.vue'
@@ -39,6 +40,12 @@
     <template v-else-if="user">
       <div class="edit-bar">
         <div class="edit-bar__inner">
+          <RouterLink :to="{ name: 'team-create' }" class="edit-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v9A2.25 2.25 0 0 1 15.75 18.75h-9A2.25 2.25 0 0 1 4.5 16.5v-9A2.25 2.25 0 0 1 6.75 5.25h9A2.25 2.25 0 0 1 18 7.5Zm-6 2.25v4.5m2.25-2.25h-4.5" />
+            </svg>
+            Создать команду
+          </RouterLink>
           <RouterLink :to="{ name: 'profile-edit' }" class="edit-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
               <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
@@ -59,6 +66,14 @@
         </aside>
 
         <main class="profile-main">
+          <div class="main-section">
+            <ProfileContactsCard
+              title="Контакты и ссылки"
+              :email="user.email"
+              :location="user.location"
+              :links="user.links"
+            />
+          </div>
           <div class="main-section">
             <ActivityFeed
               :items="activityItems"
@@ -103,6 +118,7 @@
   .edit-bar__inner {
     display: flex;
     justify-content: flex-end;
+    gap: 8px;
     padding: 10px 0 10px;
 
     @include respond-to('lg') {

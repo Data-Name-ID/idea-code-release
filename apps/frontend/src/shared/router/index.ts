@@ -41,6 +41,22 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/teams/new',
+    name: 'team-create',
+    component: () => import('@pages/team-create/ui/TeamCreatePage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/teams/join',
+    name: 'team-join',
+    component: () => import('@pages/team-join/ui/TeamJoinPage.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/teams/:id',
     name: 'team',
     component: () => import('@pages/team/ui/TeamPage.vue'),
